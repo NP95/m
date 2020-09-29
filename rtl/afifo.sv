@@ -60,7 +60,6 @@ module afifo #(
    , input                                   pop
 
    , output logic [W-1:0]                    pop_data
-   , output logic                            pop_data_vld_r
 
    //======================================================================== //
    //                                                                         //
@@ -69,8 +68,8 @@ module afifo #(
    //======================================================================== //
 
    //
-   , output logic                            empty_r
-   , output logic                            full_r
+   , output logic                            empty_w
+   , output logic                            full_w
 );
 
   typedef struct packed {
@@ -94,9 +93,6 @@ module afifo #(
   addr_t                                wptr_r;
   logic                                 wptr_en;
   //
-  logic                                 full_w;
-  logic                                 empty_w;
-  //
   addr_t                                wptr_gray_w;
   addr_t                                wptr_gray_r;
   //
@@ -111,6 +107,9 @@ module afifo #(
   //
   logic                                 pop_data_vld_w;
 
+  //
+  logic [N - 1:0][W - 1:0]              mem_r;
+
   // ======================================================================== //
   //                                                                          //
   // Combinatorial Logic                                                      //
@@ -120,33 +119,37 @@ module afifo #(
 
   // ------------------------------------------------------------------------ //
   //
-  always_comb
-    begin : full_PROC
+  always_comb begin : flags_PROC
+    
+    //
+    empty_w  = (rptr_w == wptr_rsync);
 
-      //
-      empty_w  = (rptr_w == wptr_rsync);
-      full_w   = (wptr_w.x ^ rptr_wsync.x) & (wptr_w.a == rptr_wsync.a);
+    full_w   = (wptr_w.x ^ rptr_wsync.x) & (wptr_w.a == rptr_wsync.a);
 
-    end // block: full_PROC
+  end // block: flags_PROC
   
   // ------------------------------------------------------------------------ //
   //
-  always_comb
-    begin : async_cntrl_PROC
+  always_comb begin : async_cntrl_PROC
 
-      //
-      wptr_w          = push ? wptr_r + 'b1 : wptr_r;
-      wptr_en         = push;
+    //
+    wptr_w          = push ? wptr_r + 'b1 : wptr_r;
+    wptr_en         = push;
 
-      //
-      rptr_w          = pop ? rptr_r + 'b1 : rptr_r;
-      rptr_en         = pop;
+    //
+    rptr_w          = pop ? rptr_r + 'b1 : rptr_r;
+    rptr_en         = pop;
 
-      //
-      pop_data_vld_w  = pop;
+  end // block: async_cntrl_PROC
 
-    end // block: async_cntrl_PROC
+  // ------------------------------------------------------------------------ //
+  //
+  always_comb begin : pop_data_PROC
 
+    pop_data  = mem_r [rptr_r.a];
+
+  end // block: pop_data_PROC
+  
   // ======================================================================== //
   //                                                                          //
   // Flops                                                                    //
@@ -173,22 +176,6 @@ module afifo #(
   //
   always_ff @(posedge wclk)
     if (wrst)
-      full_r <= 'b0;
-    else
-      full_r <= full_w;
-
-  // ------------------------------------------------------------------------ //
-  //
-  always_ff @(posedge rclk)
-    if (rrst)
-      empty_r <= 'b1;
-    else
-      empty_r <= empty_w;
-
-  // ------------------------------------------------------------------------ //
-  //
-  always_ff @(posedge wclk)
-    if (wrst)
       wptr_r <= '0;
     else if (wptr_en)
       wptr_r <= wptr_w;
@@ -200,14 +187,12 @@ module afifo #(
       rptr_r <= '0;
     else if (rptr_en)
       rptr_r <= rptr_w;
-
+  
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge rclk)
-    if (rrst)
-      pop_data_vld_r <= 'b0;
-    else
-      pop_data_vld_r <= pop_data_vld_w;
+  always_ff @(posedge wclk)
+    if (push)
+      mem_r [wptr_r.a] <= push_data;
   
   // ======================================================================== //
   //                                                                          //

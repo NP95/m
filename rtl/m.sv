@@ -68,6 +68,12 @@ module m (
                              IN_PACKET  = 2'b01
                              } state_t;
 
+  typedef struct packed {
+    logic                got_type;
+    logic                got_symbol;
+    m_pkg::buffer_t      buffer;
+  } match_t;
+
   // ======================================================================== //
   //                                                                          //
   // Wires                                                                    //
@@ -94,6 +100,18 @@ module m (
   m_pkg::packet_word_off_t              fsm_word_off_w;
   logic                                 fsm_word_off_inc;
   logic                                 fsm_buffer_set;
+  logic                                 fsm_can_match;
+
+  logic                                 net_out_vld;
+  m_pkg::out_t                          net_out;
+
+  // AFIFO
+  logic                                 afifo_push;
+  m_pkg::out_t                          afifo_push_data;
+  logic                                 afifo_pop;
+  m_pkg::out_t                          afifo_pop_data;
+  logic                                 afifo_empty_r;
+  logic                                 afifo_empty_w;
 
   // FSM oprands:
   m_pkg::packet_off_t                   packet_type_off_r;
@@ -113,6 +131,15 @@ module m (
   logic                                 match_symbol_did_match;
   logic                                 match_symbol_found;
   m_pkg::buffer_t                       match_symbol_buffer;
+
+  // match concensus
+  match_t                               match_r;
+  match_t                               match_w;
+  logic                                 match_en;
+
+  logic                                 match_got_type;
+  logic                                 match_got_symbol;
+  m_pkg::buffer_t                       match_buffer;
 
   // ======================================================================== //
   //                                                                          //
@@ -144,27 +171,39 @@ module m (
 
     fsm_buffer_set    = 'b0;
 
-    out_vld_w         = 'b0;
-    out_en            = '0;
+    // Flag denotes whether the word present in in_r contains state
+    // that is currently matchable (contains valid payload data). This
+    // is derived from the current FSM state.
+    //
+    fsm_can_match     = 'b0;
 
-    out_w             = '0;
-    out_w.sop         = in_r.sop;
-    out_w.eop         = in_r.eop;
-    out_w.length      = in_r.length;
-    out_w.data        = in_r.data;
-    
+    // Outputs to AFIFO
+    net_out_vld       = 'b0;
+
+    // For all fields aside from 'buffer' simply forward input to
+    // output.
+    net_out           = '0;
+    net_out.sop       = in_r.sop;
+    net_out.eop       = in_r.eop;
+    net_out.length    = in_r.length;
+    net_out.data      = in_r.data;
+
+    // FSM state update:
+    //
     case (fsm_state_r)
       IDLE: begin
         casez ({in_vld_r, in_r.sop, in_r.eop})
           3'b1_1_0: begin
             // Detected pakcet that is > 8B in length
 
-            // Drive output
-            out_vld_w         = 'b1;
-            out_en            = 'b1;
-
             // Advance packet offset
             fsm_word_off_inc  = 'b1;
+
+            // Is matchable word
+            fsm_can_match      = 'b1;
+
+            // Drive output
+            net_out_vld       = 'b1;
 
             // Advance to packet body state
             fsm_state_en      = 'b1;
@@ -176,9 +215,11 @@ module m (
             // Drive buffer as this is a valid EOP.
             fsm_buffer_set  = 'b1;
 
+            // Is matchable word
+            fsm_can_match   = 'b1;
+
             // Drive output
-            out_vld_w       = 'b1;
-            out_en          = 'b1;
+            net_out_vld     = 'b1;
 
             // Remain in IDLE state
           end
@@ -193,12 +234,26 @@ module m (
             // Word within the body of the current packet (not the
             // tail word).
             fsm_word_off_inc  = 'b1;
+
+            // Is matchable word
+            fsm_can_match     = 'b1;
+
+            // Drive output
+            net_out_vld       = 'b1;
+
+            // Remain in current state
           end
           2'b1_1: begin
             // Final word in current packet.
 
             // Drive buffer as this is a valid EOP
             fsm_buffer_set  = 'b1;
+
+            // Is matchable word
+            fsm_can_match    = 'b1;
+
+            // Drive output
+            net_out_vld     = 'b1;
 
             // Return to IDLE state; packet is complete.
             fsm_state_en    = 'b1;
@@ -214,15 +269,33 @@ module m (
     endcase // case (state_r)
 
     // Counter denoting the current 8B word within the current packet.
-    fsm_word_off_en  = (fsm_oprand_en | fsm_word_off_inc);
-    fsm_word_off_w   = fsm_oprand_en ? '0 : fsm_word_off_r + 'd1;
+    //
+    fsm_word_off_en   = (fsm_oprand_en | fsm_word_off_inc);
+    fsm_word_off_w    = fsm_oprand_en ? '0 : fsm_word_off_r + 'd1;
 
+    // Compute 'got match' status as a function of the word on the current
+    // cycle, or the matched status retained from prior cycles.
+    //
+    match_got_type    =
+      match_r.got_type | (fsm_can_match ? match_type_found : '0);
+    match_got_symbol  =
+      match_r.got_symbol | (fsm_can_match ? match_symbol_found : '0);
+    match_buffer      =
+      (fsm_can_match & match_symbol_found) ? match_symbol_buffer : match_r.buffer;
+    
     // Drive computed 'buffer' oprand based upon whether a match has
     // been encountered during the current packet.
-    casez ({fsm_buffer_set})
-      default: out_w.buffer  = '0;
-    endcase
-
+    //
+    casez ({fsm_buffer_set, match_got_type, match_got_symbol})
+      3'b1_1_1:
+        // Assign matched buffer on EOP if type and symbol have both
+        // been detected in the payload
+        net_out.buffer  = match_buffer;
+      default:
+        // Otherwise, match conditions were not met, drive zero.
+        net_out.buffer   = '0;
+    endcase // casez ({fsm_buffer_set})
+    
   end // block: fsm_PROC
   
   // ------------------------------------------------------------------------ //
@@ -297,7 +370,6 @@ module m (
     //
     match_symbol_can_match_word  = (in_r.length == 'd7);
 
-
     // Each match entity contains a specific SYMBOL_OFFSET value which
     // denotes the word in which the match operation can take
     // place. The match is not attempted it the current word is not at
@@ -324,7 +396,7 @@ module m (
     // multiple matches occur in the same cycle. It would be assumed
     // that this case would represent a misconfigured system which
     // would not occur in practice, however to prevent corruption on
-    // the key, the code simply selectes the high-est endian match.
+    // the key, the code simply selects the highest endian match.
     //
     match_symbol_buffer        = '0;
     for (int i = 0; i < 4; i++) begin
@@ -348,6 +420,76 @@ module m (
     endcase // casez ({in_vld_r, match_symbol_can_match})
     
   end // block: match_symbol_PROC
+
+  // ------------------------------------------------------------------------ //
+  //
+  always_comb begin : match_PROC
+
+    //
+    casez ({fsm_oprand_en, fsm_can_match})
+      2'b1_?:
+        // Clear retained state
+        match_en  = 'b1;
+      2'b0_1:
+        // Latch update state as necessary.
+        match_en  = (match_type_found | match_symbol_found);
+      default:
+        // Otherwise, retain prior
+        match_en  = 'b0;
+    endcase // casez ({fsm_oprand_en, fsm_can_match})
+
+    // Defaults:
+    match_w  = match_r;
+
+    // Updates
+    casez ({fsm_oprand_en, fsm_can_match})
+      2'b1_?:
+        // New packet in next cycle therefore clear retained state.
+        match_w   = 'b0;
+      2'b0_1: begin
+        // In a matchable word, therefore latch any matches.
+        
+        if (match_type_found)
+          match_w.got_type  = 'b1;
+
+        if (match_symbol_found) begin
+          match_w.got_symbol  = 'b1;
+          match_w.buffer  = match_symbol_buffer;
+        end
+
+      end
+      default:
+        // Otherwise, retain
+        match_w  = match_r;
+    endcase
+
+  end // block: match_PROC
+  
+  // ------------------------------------------------------------------------ //
+  //
+  always_comb begin : afifo_PROC
+
+    // Push from FSM
+    afifo_push       = net_out_vld;
+    afifo_push_data  = net_out;
+
+    // Self-pop whenever non-empty.
+    afifo_pop        = (~afifo_empty_r);
+
+  end // block: afifo_PROC
+  
+  // ------------------------------------------------------------------------ //
+  //
+  always_comb begin : out_PROC
+
+    // Emit output on pop
+    out_vld_w  = afifo_pop;
+
+    // Latch output state
+    out_en     = afifo_pop;
+    out_w      = afifo_pop_data;
+
+  end // block: out_PROC
   
   // ======================================================================== //
   //                                                                          //
@@ -358,7 +500,7 @@ module m (
   // ------------------------------------------------------------------------ //
   //
   always_ff @(posedge clk_net)
-    if (rst)
+    if (rst_net)
       in_vld_r <= 'b0;
     else
       in_vld_r <= in_vld_w;
@@ -378,7 +520,7 @@ module m (
   // ------------------------------------------------------------------------ //
   //
   always_ff @(posedge clk_net)
-    if (rst)
+    if (rst_net)
       fsm_state_r <= IDLE;
     else if (fsm_state_en)
       fsm_state_r <= fsm_state_w;
@@ -396,7 +538,7 @@ module m (
   // ------------------------------------------------------------------------ //
   //
   always_ff @(posedge clk_net)
-    if (rst)
+    if (rst_net)
       out_vld_r <= 'b0;
     else
       out_vld_r <= out_vld_w;
@@ -407,6 +549,14 @@ module m (
     if (out_en)
       out_r <= out_w;
 
+  // ------------------------------------------------------------------------ //
+  //
+  always_ff @(posedge clk_host)
+    if (rst_host)
+      afifo_empty_r <= 'b1;
+    else
+      afifo_empty_r <= afifo_empty_w;
+  
   // ======================================================================== //
   //                                                                          //
   // Instances                                                                //
@@ -428,7 +578,7 @@ module m (
   // (probably neglible) power saving to be had from performing this
   // on a slower clock.
   //
-  afifo u_afifo (
+  afifo #(.W($bits(m_pkg::out_t)), .N(16)) u_afifo (
     //
       .wclk                   (clk_net                 )
     , .wrst                   (rst_net                 )
@@ -436,17 +586,14 @@ module m (
     , .rclk                   (clk_host                )
     , .rrst                   (rst_host                )
     //
-    , .push                   ()
-    , .push_data              ()
+    , .push                   (afifo_push              )
+    , .push_data              (afifo_push_data         )
     //
-    , .pop                    ()
-    , .pop_data               ()
-    , .pop_data_vld_r         ()
+    , .pop                    (afifo_pop               )
+    , .pop_data               (afifo_pop_data          )
     //
-    , .empty_r                ()
-    , .full_r                 ()
+    , .empty_w                (afifo_empty_w           )
+    , .full_w                 ()
   );
 
 endmodule // m
-
-  
