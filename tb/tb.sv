@@ -81,7 +81,7 @@ module tb (
     , .packet_type_off_w      ()
     , .packet_type_w          ()
     //
-    , .sym_match_w            ()
+    , .symbol_match_w         ()
     //
     , .clk                    (clk                     )
     , .rst                    (rst                     )

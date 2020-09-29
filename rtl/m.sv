@@ -47,7 +47,7 @@ module m (
 
   // ======================================================================== //
   // Mystery ID oprand
-  , input m_pkg::sym_match_t                      sym_match_w
+  , input m_pkg::sym_match_t [3:0]                symbol_match_w
 
   // ======================================================================== //
   // Clk/Reset
@@ -95,10 +95,21 @@ module m (
   // FSM oprands:
   m_pkg::packet_off_t                   packet_type_off_r;
   m_pkg::packet_type_t                  packet_type_r;
-  m_pkg::sym_match_t                    sym_match_r;
+  m_pkg::sym_match_t [3:0]              symbol_match_r;
 
   // match_packet_type_PROC
-  logic                                 matched_packet_type;
+  logic                                 match_type_in_word;
+  logic [7:0]                           match_valid_mask;
+  logic                                 match_type_off_in_range;
+  logic [4:0]                           match_type_found_pos;
+  logic                                 match_type_found;
+
+  // match_symbol_PROC
+  logic                                 match_symbol_can_match_word;
+  logic [3:0]                           match_symbol_can_match;
+  logic                                 match_symbol_did_match;
+  logic                                 match_symbol_found;
+  m_pkg::buffer_t                       match_symbol_buffer;
 
   // ======================================================================== //
   //                                                                          //
@@ -212,20 +223,129 @@ module m (
   end // block: fsm_PROC
   
   // ------------------------------------------------------------------------ //
+  // Type is a 4B quantity which is constrained to fall within a
+  // single 8B word. The type field may not straddle multiple
+  // words. Therefore, the type field may be aligned to the following
+  // locations within the word:
   //
-  function logic [7:0] to_one_hot(m_pkg::len_t len); begin
-    return ('b1 << len)  - 'b1;
-  end endfunction
-
-  logic [7:0] match_in_vld_1h;
-  logic [3:0] match_type_found;
+  //   [3:0], [4:1], [5:2], [6:3], [7:4]
+  //
+  // Locations:
+  //
+  //   [<=2:A] and [B:>=5]
+  //
+  // are impermissible and are therefore ingored.
       
-  always_comb begin : match_PROC
+  always_comb begin : match_type_PROC
+    
+    // Mask denoting the valid bytes within the current word.
+    //
+    match_valid_mask    = m_pkg::len_to_unary_mask(in_r.length);
 
-    match_in_vld_1h  = to_one_hot(in_r.length);
+    // Flag denoting that the current type is expected somewhere
+    // within the current word.
+    //
+    match_type_in_word  = (fsm_word_off_r == packet_type_off_r.word);
 
-  end // block: match_PROC
+    // Byte comparison logic for each of the valid matching regions.
+    //
+    for (int i = 0; i < 5; i++) begin
+      match_type_found_pos [i]  = '1;
+      for (int j = 0; j < 4; j++) begin
+        match_type_found_pos[i] &= match_valid_mask[i + j]
+          ? (packet_type_r[j] == in_r.data[i + j]) : '0;
+      end
+    end
 
+    // The type falls within a single 8B word and is 4B in length. As
+    // such, the only permissible starting locations for the type in
+    // the 8B word are: 0, 1, 2, 3, 4 (as above).
+    //
+    match_type_off_in_range  = (packet_type_off_r.off <= 'd4);
+
+    // Compute final type match within current word.
+    //
+    casez ({in_vld_r, match_type_in_word, match_type_off_in_range})
+      3'b1_1_1:
+        // Possibly found whenever current word is valid and we are in the
+        // word where the type is expected to be found.
+        match_type_found  = match_type_found_pos [packet_type_off_r.off];
+      default:
+        // Otherwise, not found:
+        match_type_found  = 'b0;
+    endcase
+
+  end // block: match_type_PROC
+
+  // ------------------------------------------------------------------------ //
+  //
+  // Block to detect the presence of the associate 'match'
+  // symbol.
+  //
+  //  Caveat: The problem statement makes no explicit reference
+  // to the expected alignment of the 'symbol'. As the preceeding
+  // operation is constrained such that the type may not straddle
+  // multiple 8B words, it is too assumed that this remains the case
+  // here.
+  always_comb begin : match_symbol_PROC
+
+    // A symbol is 8B therefore a match can occur only when the entire
+    // 8B word is valid.
+    //
+    match_symbol_can_match_word  = (in_r.length == 'd7);
+
+
+    // Each match entity contains a specific SYMBOL_OFFSET value which
+    // denotes the word in which the match operation can take
+    // place. The match is not attempted it the current word is not at
+    // the required location. Caveat: I have added an additional valid
+    // field to the structure such that the match will not take place
+    // unless the value has been appropriately configured.
+    //
+    for (int i = 0; i < 4; i++) begin
+      match_symbol_can_match [i]  =
+        symbol_match_r [i].valid & (fsm_word_off_r == symbol_match_r [i].off);
+    end
+
+    // Flag denoting when a match occurred in the current word (an
+    // explicit flag is necessary here as if this detection was only
+    // carried out on the "_buffer" value when non-zero, the logic
+    // could not detect the buffer == '0 case).
+    //
+    match_symbol_did_match     = 'b0;
+
+    // Comparator logic:
+    //
+    // Note: this is a 4-Way priority decoded structure. The problem
+    // statement does not specifically reference what to do whenever
+    // multiple matches occur in the same cycle. It would be assumed
+    // that this case would represent a misconfigured system which
+    // would not occur in practice, however to prevent corruption on
+    // the key, the code simply selectes the high-est endian match.
+    //
+    match_symbol_buffer        = '0;
+    for (int i = 0; i < 4; i++) begin
+      if (match_symbol_can_match [i] &&
+         (in_r.data == symbol_match_r [i].match)) begin
+        match_symbol_did_match |= 'b1;
+        match_symbol_buffer     = symbol_match_r [i].buffer;
+      end
+    end
+
+    // Compute final match decision.
+    //
+    casez ({in_vld_r, match_symbol_can_match_word})
+      2'b1_1:
+        // Take the did_match value if the current word is
+        // "matchable".
+        match_symbol_found  = match_symbol_did_match;
+      default:
+        // Otherwise, no match took place.
+        match_symbol_found  = 'b0;
+    endcase // casez ({in_vld_r, match_symbol_can_match})
+    
+  end // block: match_symbol_PROC
+  
   // ======================================================================== //
   //                                                                          //
   // Flops                                                                    //
@@ -267,7 +387,7 @@ module m (
       packet_type_off_r <= packet_type_off_w;
       packet_type_r     <= packet_type_w;
 
-      sym_match_r       <= sym_match_w;
+      symbol_match_r    <= symbol_match_w;
     end
   
   // ------------------------------------------------------------------------ //

@@ -33,6 +33,12 @@ package m_pkg;
   // Length type
   typedef logic [2:0] len_t;
 
+  // From a len, derive the corresponding unary (thermometer) mask.
+  function logic [7:0] len_to_unary_mask(len_t len); begin
+    // TBD: verify that len == 0, results in 'b1.
+    return ('b1 << int'(len) + 'b1)  - 'b1;
+  end endfunction
+
   // Data type
   typedef logic [3:0][7:0] data_t;
 
@@ -59,15 +65,19 @@ package m_pkg;
   // Packet type, type.
   typedef logic [2:0][7:0] packet_type_t;
 
+  typedef logic [7:0]      packet_word_off_t;
+
   // Match definition.
   typedef struct packed {
+    // Match validity
+    logic        valid;
+    // Match word offet
+    packet_word_off_t off;
     // Matching 8B token
     data_t       match;
     // Resultant key emitted to host on successful match.
-    buffer_t     key;
+    buffer_t     buffer;
   } sym_match_t;
-
-  typedef logic [7:0] packet_word_off_t;
   
   // Packet offset location type
   typedef struct packed {
