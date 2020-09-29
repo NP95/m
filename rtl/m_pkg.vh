@@ -40,7 +40,7 @@ package m_pkg;
   end endfunction
 
   // Data type
-  typedef logic [3:0][7:0] data_t;
+  typedef logic [7:0][7:0] data_t;
 
   // Input packet type
   typedef struct packed {
@@ -63,7 +63,7 @@ package m_pkg;
   } out_t;
 
   // Packet type, type.
-  typedef logic [2:0][7:0] packet_type_t;
+  typedef logic [3:0][7:0] packet_type_t;
 
   typedef logic [7:0]      packet_word_off_t;
 

@@ -47,24 +47,88 @@ module tb (
   , output m_pkg::buffer_t                        out_buffer_r
 
   // ======================================================================== //
+  // Packet type interface
+  , input m_pkg::packet_off_t                     packet_type_off_w
+  , input m_pkg::packet_type_t                    packet_type_w
+
+  // ======================================================================== //
+  // Match interface
+
+  // Interface 0
+  , input                                         match0_vld_w
+  , input m_pkg::packet_word_off_t                match0_off_w
+  , input m_pkg::data_t                           match0_match_w
+  , input m_pkg::buffer_t                         match0_buffer_w
+
+  // Interface 1
+  , input                                         match1_vld_w
+  , input m_pkg::packet_word_off_t                match1_off_w
+  , input m_pkg::data_t                           match1_match_w
+  , input m_pkg::buffer_t                         match1_buffer_w
+
+  // Interface 2
+  , input                                         match2_vld_w
+  , input m_pkg::packet_word_off_t                match2_off_w
+  , input m_pkg::data_t                           match2_match_w
+  , input m_pkg::buffer_t                         match2_buffer_w
+
+  // Interface 3
+  , input                                         match3_vld_w
+  , input m_pkg::packet_word_off_t                match3_off_w
+  , input m_pkg::data_t                           match3_match_w
+  , input m_pkg::buffer_t                         match3_buffer_w
+
+  // ======================================================================== //
   // Clk/Reset
-  , input                                         clk
-  , input                                         rst
+  , input                                         clk_net
+  , input                                         rst_net
+  //
+  , input                                         clk_host
+  , input                                         rst_host
 );
 
   //
   m_pkg::in_t                      in_w;
   m_pkg::out_t                     out_r;
 
+  m_pkg::sym_match_t [3:0]         symbol_match_w;
+
   // ------------------------------------------------------------------------ //
   //
   always_comb begin : in_PROC
 
-    in_w         = '0;
-    in_w.sop     = in_sop_w;
-    in_w.eop     = in_eop_w;
-    in_w.length  = in_length_w;
-    in_w.data    = in_data_w;
+    in_w                       = '0;
+    in_w.sop                   = in_sop_w;
+    in_w.eop                   = in_eop_w;
+    in_w.length                = in_length_w;
+    in_w.data                  = in_data_w;
+
+
+    symbol_match_w             = '0;
+
+    //
+    symbol_match_w [0].valid   = match0_vld_w;
+    symbol_match_w [0].off     = match0_off_w;
+    symbol_match_w [0].match   = match0_match_w;
+    symbol_match_w [0].buffer  = match0_buffer_w;
+
+    //
+    symbol_match_w [1].valid   = match1_vld_w;
+    symbol_match_w [1].off     = match1_off_w;
+    symbol_match_w [1].match   = match1_match_w;
+    symbol_match_w [1].buffer  = match1_buffer_w;
+
+    //
+    symbol_match_w [2].valid   = match2_vld_w;
+    symbol_match_w [2].off     = match2_off_w;
+    symbol_match_w [2].match   = match2_match_w;
+    symbol_match_w [2].buffer  = match2_buffer_w;
+
+    //
+    symbol_match_w [3].valid   = match3_vld_w;
+    symbol_match_w [3].off     = match3_off_w;
+    symbol_match_w [3].match   = match3_match_w;
+    symbol_match_w [3].buffer  = match3_buffer_w;
         
   end // block: in_PROC
 
@@ -78,16 +142,16 @@ module tb (
     , .out_vld_r              (out_vld_r               )
     , .out_r                  (out_r                   )
     //
-    , .packet_type_off_w      ()
-    , .packet_type_w          ()
+    , .packet_type_off_w      (packet_type_off_w       )
+    , .packet_type_w          (packet_type_w           )
     //
-    , .symbol_match_w         ()
+    , .symbol_match_w         (symbol_match_w          )
     //
-    , .clk_net                ()
-    , .rst_net                ()
+    , .clk_net                (clk_net                 )
+    , .rst_net                (clk_net                 )
     //
-    , .clk_host               ()
-    , .rst_host               ()
+    , .clk_host               (clk_host                )
+    , .rst_host               (clk_host)
   );
 
   // ------------------------------------------------------------------------ //

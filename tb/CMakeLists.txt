@@ -65,7 +65,10 @@ add_custom_target(
   COMMENT "Verilating (C++): tb.sv"
   )
 
-add_executable(tb tb.cc)
+add_executable(tb
+  tb.cc
+  top.cc
+  )
 target_link_libraries(tb
   ${CMAKE_CURRENT_BINARY_DIR}/vobj/Vtb__ALL.a
   v

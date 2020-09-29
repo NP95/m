@@ -26,9 +26,10 @@
 //========================================================================== //
 
 #include "gtest/gtest.h"
-#include "vobj/Vtb.h"
+#include "top.h"
 
 TEST(m, scenario0) {
+  tb::Top top;
 }
 
 int main(int argc, char** argv) {
