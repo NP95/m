@@ -51,8 +51,11 @@ module m (
 
   // ======================================================================== //
   // Clk/Reset
-  , input                                         clk
-  , input                                         rst
+  , input                                         clk_net
+  , input                                         rst_net
+
+  , input                                         clk_host
+  , input                                         rst_host
 );
 
   // ======================================================================== //
@@ -354,7 +357,7 @@ module m (
 
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (rst)
       in_vld_r <= 'b0;
     else
@@ -362,19 +365,19 @@ module m (
 
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (in_en)
       in_r <= in_w;
   
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (fsm_word_off_en)
       fsm_word_off_r <= fsm_word_off_w;
   
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (rst)
       fsm_state_r <= IDLE;
     else if (fsm_state_en)
@@ -382,7 +385,7 @@ module m (
   
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (fsm_oprand_en) begin
       packet_type_off_r <= packet_type_off_w;
       packet_type_r     <= packet_type_w;
@@ -392,7 +395,7 @@ module m (
   
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (rst)
       out_vld_r <= 'b0;
     else
@@ -400,9 +403,49 @@ module m (
   
   // ------------------------------------------------------------------------ //
   //
-  always_ff @(posedge clk)
+  always_ff @(posedge clk_net)
     if (out_en)
       out_r <= out_w;
+
+  // ======================================================================== //
+  //                                                                          //
+  // Instances                                                                //
+  //                                                                          //
+  // ======================================================================== //
+
+  // ------------------------------------------------------------------------ //
+  // Asynchronous queue to communciate packet data from the network
+  // clock to the host clock. As host clock > network clock, and in
+  // the absence of back pressure, a queue with greater than two
+  // entries is gaurenteed not to overflow. There are perhaps other
+  // cheaper options that could be used here, but an asynchronous fifo
+  // is a common primitive that one would expect to be an
+  // "off-the-shelf" IP that can be easily generated in an FPGA
+  // context.
+  //
+  // Notes: the decision here was to perform the packet parsing in the
+  // slower network clock-domain as there is potentially some small
+  // (probably neglible) power saving to be had from performing this
+  // on a slower clock.
+  //
+  afifo u_afifo (
+    //
+      .wclk                   (clk_net                 )
+    , .wrst                   (rst_net                 )
+    //
+    , .rclk                   (clk_host                )
+    , .rrst                   (rst_host                )
+    //
+    , .push                   ()
+    , .push_data              ()
+    //
+    , .pop                    ()
+    , .pop_data               ()
+    , .pop_data_vld_r         ()
+    //
+    , .empty_r                ()
+    , .full_r                 ()
+  );
 
 endmodule // m
 
