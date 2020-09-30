@@ -29,18 +29,32 @@
 #include "tb.h"
 #include <deque>
 
-TEST(m, scenario0) {
+
+TEST(smoke, passthru) {
+  // Simple scenario; expect data in and data out. No matching
+  // activity, but data read out should be the same as that originally
+  // sent in.
+
   tb::Random::init(1);
   
   tb::Options opts;
+#ifdef OPT_ENABLE_VCD
+  // Enable waveforms
   opts.enable_vcd = true;
+  opts.vcd_name = "passthru.vcd";
+#endif
   
   tb::TB tb(opts);
 
   std::deque<tb::TestCase> tests;
 
   const std::size_t beats = 2;
+
+  // Testcase
   tb::TestCase tc;
+
+  // Construct input stimulus:
+  //
   for (std::size_t i = 0; i < beats; i++) {
     tb::In in;
     in.valid = true;
@@ -50,6 +64,9 @@ TEST(m, scenario0) {
     in.data = tb::Random::uniform<vluint64_t>();
     tc.in.push_back(in);
   }
+
+  // Construct expected output:
+  //
   for (std::size_t i = 0; i < beats; i++) {
     tb::Out out;
     out.valid = true;
@@ -63,6 +80,74 @@ TEST(m, scenario0) {
   }
   tests.push_back(tc);
   
+  tb.run(tests);
+}
+
+TEST(smoke, simple_match) {
+  // Basic match case, send a simple packet through with the match
+  // elements at known locations within the payload.
+  tb::Random::init(1);
+  
+  tb::Options opts;
+#ifdef OPT_ENABLE_VCD
+  // Enable waveforms
+  opts.enable_vcd = true;
+  opts.vcd_name = "passthru.vcd";
+#endif
+
+  std::deque<tb::TestCase> tests;
+
+  const std::size_t rounds = 1;
+  const std::size_t beats = 16;
+  const vluint8_t buffer = 0x12;
+
+  for (std::size_t round = 0; round < rounds; round++) {
+    tb::TestCase tc;
+
+    // In:
+    for (std::size_t i = 0; i < beats; i++) {
+      tb::In in;
+
+      in.valid = true;
+      in.sop = (i == 0);
+      in.eop = (i == (beats - 1));
+      in.length = 7;
+      in.data = tb::Random::uniform<vluint64_t>();
+
+      tc.in.push_back(in);
+    }
+
+    // Out:
+    for (std::size_t i = 0; i < beats; i++) {
+      tb::Out out;
+      out.valid = true;
+      out.sop = (i == 0);
+      out.eop = (i == (beats - 1));
+      out.length = 7;
+      // In -> Out; data is not changed.
+      out.data = tc.in[i].data;
+      out.buffer = out.eop ? buffer : 0;
+      tc.out.push_back(out);
+    }
+
+    // Packet type
+    tb::PacketType t;
+    t.off = 0;
+    t.type = tc.in[0].data & 0xFFFFFFFF;
+    tc.type = t;
+
+    std::vector<tb::SymbolMatch> m(4);
+    // Some arbitrary slot within the match set.
+    m[2].valid = true;
+    m[2].off = 2;
+    m[2].match = tc.in[2].data;
+    m[2].buffer = buffer;
+    tc.match = m;
+
+    tests.push_back(tc);
+  }
+  
+  tb::TB tb(opts);
   tb.run(tests);
 }
 

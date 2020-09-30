@@ -33,6 +33,7 @@
 #include <deque>
 #include <random>
 #include <limits>
+#include <string>
 
 // Forwards
 class Vtb;
@@ -43,8 +44,11 @@ class VerilatedVcdC;
 namespace tb {
 
 struct Options {
-  // Enable trace
+  // Enable wave tracing
   bool enable_vcd = false;
+
+  // Emitted waveform
+  std::string vcd_name = "sim.vcd";
 };
 
 
@@ -86,9 +90,9 @@ struct Out {
 
 struct PacketType {
 
-  vluint32_t off;
+  vluint16_t off;
 
-  vluint16_t type;
+  vluint32_t type;
 };
 
 struct SymbolMatch {
@@ -121,6 +125,9 @@ struct TestCase {
   std::vector<SymbolMatch> match;
 };
 
+
+// Randomization support
+//
 struct Random {
   // Initialize random state
   static void init(unsigned seed);

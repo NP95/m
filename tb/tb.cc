@@ -125,7 +125,7 @@ TB::TB(const Options& opts) : opts_(opts) {
   if (opts.enable_vcd) {
     vcd_ = new VerilatedVcdC;
     tb_->trace(vcd_, 99);
-    vcd_->open("sim.vcd");
+    vcd_->open(opts.vcd_name.c_str());
   }
 #endif
 }
@@ -183,6 +183,18 @@ void TB::run(std::deque<TestCase>& tests) {
     }
 #endif
   }
+
+  // All stimulus must have been emitted.
+  std::deque<In>& ins = sim_context_.actual_in;
+  EXPECT_TRUE(ins.empty());
+  
+  // At the end of time, expect that the RTL has been appropriately
+  // flushed.
+  std::deque<Out>& outs{sim_context_.expected_out};
+  EXPECT_TRUE(outs.empty());
+
+  // All tests must have run:
+  EXPECT_TRUE(tests.empty());
 }
 
 void TB::on_net_clk_negedge(std::deque<TestCase>& tests) {
