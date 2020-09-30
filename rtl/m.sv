@@ -315,9 +315,11 @@ module m (
       
   always_comb begin : match_type_PROC
     
-    // Mask denoting the valid bytes within the current word.
+    // Mask denoting the valid bytes within the current word. Length
+    // is only considered on EOP.
     //
-    match_valid_mask    = m_pkg::len_to_unary_mask(in_r.length);
+    match_valid_mask    =
+      in_r.eop ? m_pkg::len_to_unary_mask(in_r.length) : '1;
 
     // Flag denoting that the current type is expected somewhere
     // within the current word.
@@ -369,7 +371,7 @@ module m (
     // A symbol is 8B therefore a match can occur only when the entire
     // 8B word is valid.
     //
-    match_symbol_can_match_word  = (in_r.length == 'd7);
+    match_symbol_can_match_word  = (~in_r.eop) | (in_r.length == 'd7);
 
     // Each match entity contains a specific SYMBOL_OFFSET value which
     // denotes the word in which the match operation can take
@@ -380,7 +382,8 @@ module m (
     //
     for (int i = 0; i < 4; i++) begin
       match_symbol_can_match [i]  =
-        symbol_match_r [i].valid & (fsm_word_off_r == symbol_match_r [i].off);
+        symbol_match_r [i].valid &
+         (fsm_word_off_r == symbol_match_r [i].off);
     end
 
     // Flag denoting when a match occurred in the current word (an
@@ -535,6 +538,12 @@ module m (
 
       symbol_match_r    <= symbol_match_w;
     end
+  
+  // ------------------------------------------------------------------------ //
+  //
+  always_ff @(posedge clk_net)
+    if (match_en)
+      match_r <= match_w;
   
   // ------------------------------------------------------------------------ //
   //

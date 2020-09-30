@@ -81,10 +81,12 @@ target_include_directories(tb PRIVATE
   )
 add_dependencies(tb build_verilog)
 
-add_executable(smoke
-  smoke.cc
-  )
-target_link_libraries(smoke tb)
-target_include_directories(smoke PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR}
-  )
+macro (create_test target file)
+  add_executable(${target} ${file})
+  target_link_libraries(${target} tb)
+  target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  add_test(NAME ${target} COMMAND ${target})
+endmacro ()
+
+create_test(smoke smoke.cc)
+create_test(regress regress.cc)

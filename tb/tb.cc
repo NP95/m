@@ -38,6 +38,11 @@ void Random::init(unsigned seed) {
   mt_ = std::mt19937{seed};
 }
 
+bool Random::boolean(double true_prob) {
+  std::bernoulli_distribution d(true_prob);
+  return d(mt_);
+}
+
 struct InDriver {
   static void drive(Vtb* tb) {
     drive(tb, In{});
@@ -276,7 +281,10 @@ void TB::on_host_clk_negedge() {
         // Validate actual vs. expected.
         EXPECT_EQ(expected.sop, actual.sop);
         EXPECT_EQ(expected.eop, actual.eop);
-        EXPECT_EQ(expected.length, actual.length);
+        if (expected.eop) {
+          // Length is only considered wehn EOP is valid.
+          EXPECT_EQ(expected.length, actual.length);
+        }
         EXPECT_EQ(expected.data, actual.data);
         EXPECT_EQ(expected.buffer, actual.buffer);
 

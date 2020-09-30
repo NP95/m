@@ -92,17 +92,21 @@ TEST(smoke, simple_match) {
 #ifdef OPT_ENABLE_VCD
   // Enable waveforms
   opts.enable_vcd = true;
-  opts.vcd_name = "passthru.vcd";
+  opts.vcd_name = "simple_match.vcd";
 #endif
 
   std::deque<tb::TestCase> tests;
 
-  const std::size_t rounds = 1;
-  const std::size_t beats = 16;
-  const vluint8_t buffer = 0x12;
+  // Issue the same packet 'rounds' times; ensures that internal
+  // retained state is appropriately flushed/cleared between packets.
+  const std::size_t rounds = 1024;
+    const vluint8_t buffer = tb::Random::uniform<vluint8_t>(15);
 
   for (std::size_t round = 0; round < rounds; round++) {
     tb::TestCase tc;
+
+    // Create packet with some arbitrary length.
+    const std::size_t beats = tb::Random::uniform<std::size_t>(1500 / 8, 1);
 
     // In:
     for (std::size_t i = 0; i < beats; i++) {
@@ -111,7 +115,7 @@ TEST(smoke, simple_match) {
       in.valid = true;
       in.sop = (i == 0);
       in.eop = (i == (beats - 1));
-      in.length = 7;
+      in.length = in.eop ? 7 : 0;
       in.data = tb::Random::uniform<vluint64_t>();
 
       tc.in.push_back(in);
@@ -123,7 +127,7 @@ TEST(smoke, simple_match) {
       out.valid = true;
       out.sop = (i == 0);
       out.eop = (i == (beats - 1));
-      out.length = 7;
+      out.length = out.eop ? 7 : 0;
       // In -> Out; data is not changed.
       out.data = tc.in[i].data;
       out.buffer = out.eop ? buffer : 0;
@@ -138,10 +142,12 @@ TEST(smoke, simple_match) {
 
     std::vector<tb::SymbolMatch> m(4);
     // Some arbitrary slot within the match set.
-    m[2].valid = true;
-    m[2].off = 2;
-    m[2].match = tc.in[2].data;
-    m[2].buffer = buffer;
+    const std::size_t pos = tb::Random::uniform<std::size_t>(3, 0);
+    const std::size_t index = tb::Random::uniform<std::size_t>(beats - 1, 0);
+    m[pos].valid = true;
+    m[pos].off = index;
+    m[pos].match = tc.in[index].data;
+    m[pos].buffer = buffer;
     tc.match = m;
 
     tests.push_back(tc);

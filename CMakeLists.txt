@@ -43,4 +43,6 @@ option(OPT_ENABLE_VCD "Enable waveform tracing (VCD)." ON)
 add_subdirectory(third_party)
 
 add_subdirectory(rtl)
+
+enable_testing()
 add_subdirectory(tb)

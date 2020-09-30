@@ -34,6 +34,7 @@
 #include <random>
 #include <limits>
 #include <string>
+#include <algorithm>
 
 // Forwards
 class Vtb;
@@ -136,12 +137,25 @@ struct Random {
   static std::mt19937& mt() { return mt_; }
 
 
+  // Generate a random integral type in range [lo, hi]
   template<typename T>
   static T uniform(T hi = std::numeric_limits<T>::max(),
-            T lo = std::numeric_limits<T>::min()) {
+                   T lo = std::numeric_limits<T>::min()) {
     std::uniform_int_distribution<T> d(lo, hi);
     return d(mt_);
   }
+
+  // Generate a boolean with true probability 'true_prob'.
+  static bool boolean(double true_prob = 0.5f);
+
+
+  template<typename FwdIt>
+  static FwdIt select_one(FwdIt begin, FwdIt end) {
+    if (begin == end) return end;
+    std::advance(begin, Random::uniform(std::distance(begin, end) - 1));
+    return begin;
+  }
+  
   
  private:
   static inline std::mt19937 mt_;
