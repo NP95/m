@@ -31,8 +31,16 @@
 #  include "verilated_vcd_c.h"
 #endif
 #include "gtest/gtest.h"
+#include <sstream>
 
 namespace tb {
+
+std::string TestCase::to_string() const {
+  std::stringstream ss;
+  // TODO
+  ss << "A packet";
+  return ss.str();
+}
 
 void Random::init(unsigned seed) {
   mt_ = std::mt19937{seed};
@@ -281,13 +289,12 @@ void TB::on_host_clk_negedge() {
         // Validate actual vs. expected.
         EXPECT_EQ(expected.sop, actual.sop);
         EXPECT_EQ(expected.eop, actual.eop);
+        EXPECT_EQ(expected.data, actual.data);
         if (expected.eop) {
           // Length is only considered wehn EOP is valid.
           EXPECT_EQ(expected.length, actual.length);
+          EXPECT_EQ(expected.buffer, actual.buffer);
         }
-        EXPECT_EQ(expected.data, actual.data);
-        EXPECT_EQ(expected.buffer, actual.buffer);
-
         outs.pop_front();
       }
     } break;

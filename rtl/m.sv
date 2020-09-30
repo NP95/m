@@ -425,6 +425,10 @@ module m (
     
   end // block: match_symbol_PROC
 
+  m_pkg::data_t debug_data, debug_match;
+  always_comb debug_data  = in_r.data;
+  always_comb debug_match  = symbol_match_r [3].match;
+
   // ------------------------------------------------------------------------ //
   //
   always_comb begin : match_PROC

@@ -30,13 +30,14 @@
 #include <deque>
 #include <string>
 #include <random>
+#include <iostream>
 
 template<typename T>
 class UniqueRandomIntegral {
  public:
   UniqueRandomIntegral(T hi = std::numeric_limits<T>::max(),
-                       T lo = std::numeric_limits<T>::min()) {
-  }
+                       T lo = std::numeric_limits<T>::min())
+      : hi_(hi), lo_(lo) {}
 
   // Accessors:
   T hi() const { return hi_; }
@@ -86,6 +87,9 @@ class TestcaseBuilder {
   void build(std::deque<tb::TestCase>& tc) {
     for (std::size_t i = 0; i < n; i++) {
       tc.push_back(generate_testcase());
+
+      const tb::TestCase& tb = tc.back();
+      std::cout << "Generate testcase " << i << ": " << tb.to_string() << "\n";
     }
   }
 
@@ -102,8 +106,10 @@ class TestcaseBuilder {
       const bool is_bubble = tb::Random::boolean(bubble_probability);
       if (!is_bubble) {
         // SOP on first word
+        in.valid = true;
         in.sop = tc.in.empty();
         in.eop = (bytes <= 8);
+        in.length = 0;
         if (in.eop) { in.length = bytes - 1; }
         in.data = gen_data();
 
@@ -126,6 +132,7 @@ class TestcaseBuilder {
         out.eop = in.eop;
         out.length = in.length;
         out.data = in.data;
+        out.buffer = 0;
 
         tc.out.push_back(out);
       }
@@ -149,7 +156,6 @@ class TestcaseBuilder {
       tb::Out& out = tc.out.back();
       out.buffer = 0;
     }
-
     return tc;
   }
 
@@ -193,6 +199,8 @@ class TestcaseBuilder {
       match.push_back(symbol);
     }
 
+    if (match.empty()) { fail_match = true; }
+
     if (!fail_match) {
       // Now, generate an entry which we expect to match.
       auto it = tb::Random::select_one(match.begin(), match.end());
@@ -211,13 +219,13 @@ class TestcaseBuilder {
       }
 
       // Get matching buffer if still matching
-      buffer = !fail_match ? it->buffer : 0;
+      buffer = it->buffer;
     }
 
     tc.match = match;
 
     tb::Out& out = tc.out.back();
-    out.buffer = buffer;
+    out.buffer = fail_match ? 0 : buffer;
   }
 };
 
@@ -229,6 +237,12 @@ class RegressEnvironment {
 
   std::string name() const { return name_; }
 
+  // Total number of test cases.
+  std::size_t n = 1;
+
+  // Enable verbose logging in the testbench
+  bool verbose_logging = false;
+
   void run() const {
     tb::Options opts;
 #ifdef OPT_ENABLE_VCD
@@ -236,10 +250,11 @@ class RegressEnvironment {
     opts.enable_vcd = true;
     opts.vcd_name = name_ + ".vcd";
 #endif
+    opts.verbose = verbose_logging;
   
     tb::TB tb(opts);
     TestcaseBuilder tcb;
-    tcb.n = 1024;
+    tcb.n = n;
     
     std::deque<tb::TestCase> tests;
     tcb.build(tests);
@@ -253,10 +268,14 @@ class RegressEnvironment {
 
 TEST(regress, regress) {
   // Fully randomized, self-checking testbench.
-  for (std::size_t round = 0; round < 100; round++) {
+  for (std::size_t round = 0; round < 1; round++) {
     const unsigned seed = tb::Random::uniform<unsigned>();
     const std::string testname = "regress" + std::to_string(round);
-    const RegressEnvironment r{testname, seed};
+    RegressEnvironment r{testname, seed};
+    r.n = 1;
+#ifdef OPT_VERBOSE_LOGGING
+    r.verbose = true;
+#endif
     r.run();
   }
 }
