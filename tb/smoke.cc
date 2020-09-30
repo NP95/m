@@ -30,6 +30,8 @@
 #include <deque>
 
 TEST(m, scenario0) {
+  tb::Random::init(1);
+  
   tb::Options opts;
   opts.enable_vcd = true;
   
@@ -37,23 +39,25 @@ TEST(m, scenario0) {
 
   std::deque<tb::TestCase> tests;
 
+  const std::size_t beats = 2;
   tb::TestCase tc;
-  for (std::size_t i = 0; i < 2; i++) {
+  for (std::size_t i = 0; i < beats; i++) {
     tb::In in;
     in.valid = true;
     in.sop = (i == 0);
-    in.eop = (i == 1);
+    in.eop = (i == (beats - 1));
     in.length = 7;
-    in.data = 0;
+    in.data = tb::Random::uniform<vluint64_t>();
     tc.in.push_back(in);
   }
-  for (std::size_t i = 0; i < 2; i++) {
+  for (std::size_t i = 0; i < beats; i++) {
     tb::Out out;
     out.valid = true;
     out.sop = (i == 0);
-    out.eop = (i == 1);
+    out.eop = (i == (beats - 1));
     out.length = 7;
-    out.data = 0;
+    // In -> Out; data is not changed.
+    out.data = tc.in[i].data;
     out.buffer = 0;
     tc.out.push_back(out);
   }

@@ -31,6 +31,8 @@
 #include "verilated.h"
 #include <vector>
 #include <deque>
+#include <random>
+#include <limits>
 
 // Forwards
 class Vtb;
@@ -119,6 +121,24 @@ struct TestCase {
   std::vector<SymbolMatch> match;
 };
 
+struct Random {
+  // Initialize random state
+  static void init(unsigned seed);
+
+  // Get current random state.
+  static std::mt19937& mt() { return mt_; }
+
+
+  template<typename T>
+  static T uniform(T hi = std::numeric_limits<T>::max(),
+            T lo = std::numeric_limits<T>::min()) {
+    std::uniform_int_distribution<T> d(lo, hi);
+    return d(mt_);
+  }
+  
+ private:
+  static inline std::mt19937 mt_;
+};
 
 class TB {
   enum class NetState {

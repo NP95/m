@@ -30,8 +30,13 @@
 #ifdef OPT_ENABLE_VCD
 #  include "verilated_vcd_c.h"
 #endif
+#include "gtest/gtest.h"
 
 namespace tb {
+
+void Random::init(unsigned seed) {
+  mt_ = std::mt19937{seed};
+}
 
 struct InDriver {
   static void drive(Vtb* tb) {
@@ -250,7 +255,18 @@ void TB::on_host_clk_negedge() {
       const Out actual = OutMonitor::get(tb_);
       if (actual.valid) {
         std::deque<Out>& outs{sim_context_.expected_out};
-        const Out& actual{outs.front()};
+
+        // Error out immediately if receiving unexpected output.
+        ASSERT_FALSE(outs.empty());
+        
+        const Out& expected{outs.front()};
+
+        // Validate actual vs. expected.
+        EXPECT_EQ(expected.sop, actual.sop);
+        EXPECT_EQ(expected.eop, actual.eop);
+        EXPECT_EQ(expected.length, actual.length);
+        EXPECT_EQ(expected.data, actual.data);
+        EXPECT_EQ(expected.buffer, actual.buffer);
 
         outs.pop_front();
       }
