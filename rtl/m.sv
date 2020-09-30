@@ -151,7 +151,8 @@ module m (
   //
   always_comb begin : in_PROC
 
-    in_en  = in_vld_r;
+    // Latch input.
+    in_en  = in_vld_w;
 
   end // block: in_PROC
   

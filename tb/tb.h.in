@@ -1,0 +1,199 @@
+//========================================================================== //
+// Copyright (c) 2020, Stephen Henry
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//========================================================================== //
+
+#ifndef M_TB_TB_H
+#define M_TB_TB_H
+
+#include "verilated.h"
+#include <vector>
+#include <deque>
+
+// Forwards
+class Vtb;
+class VerilatedVcdC;
+
+#cmakedefine OPT_ENABLE_VCD
+
+namespace tb {
+
+struct Options {
+  // Enable trace
+  bool enable_vcd = false;
+};
+
+
+struct In {
+  bool valid = false;
+
+  // Start of packet
+  bool sop = false;
+
+  // End of packet
+  bool eop = false;
+
+  // Word length (number of valid bytes)
+  vluint8_t length;
+
+  // Word data.
+  vluint64_t data;
+};
+
+struct Out {
+  bool valid = false;
+  
+  // Start of packet
+  bool sop = false;
+
+  // End of packet
+  bool eop = false;
+
+  // Word length (number of valid bytes)
+  vluint8_t length;
+
+  // Word data
+  vluint64_t data;
+
+  // Match buffer valid on EOP
+  vluint8_t buffer;
+};
+
+
+struct PacketType {
+
+  vluint32_t off;
+
+  vluint16_t type;
+};
+
+struct SymbolMatch {
+  // Validity
+  bool valid = false;
+
+  // Offset
+  vluint8_t off;
+
+  // 8B match word
+  vluint64_t match;
+
+  // "Buffer" (Key) on a match operation.
+  vluint8_t buffer;
+};
+
+
+struct TestCase {
+
+  // Stimulus
+  std::deque<In> in;
+
+  // Expected output
+  std::deque<Out> out;
+
+  //
+  PacketType type;
+
+  // Symbol matches (up to 4).
+  std::vector<SymbolMatch> match;
+};
+
+
+class TB {
+  enum class NetState {
+    PreReset,
+    InReset,
+    Active,
+    PostActive
+  };
+
+  enum class HostState {
+    PreReset,
+    InReset,
+    Active
+  };
+  
+ public:
+  TB(const Options& opts = Options());
+  virtual ~TB();
+
+  vluint64_t time() const { return time_; }
+
+  void run(std::deque<TestCase>& tests);
+
+ private:
+
+  virtual void on_net_clk_negedge(std::deque<TestCase>& tests);
+
+  virtual void on_host_clk_negedge();
+
+
+  // Current simulation time
+  vluint64_t time_;
+  
+  // Verilated instance
+  Vtb* tb_ = nullptr;
+
+  // VCD (if applicable)
+  VerilatedVcdC* vcd_ = nullptr;
+
+  // Tb options
+  Options opts_;
+
+  struct {
+    //
+    NetState state = NetState::PreReset;
+
+    //
+    vluint8_t reset_ticks;
+
+  } net_context_;
+
+  //
+  struct {
+    //
+    HostState state = HostState::PreReset;
+
+    //
+    vluint8_t reset_ticks;
+
+  } host_context_;
+
+
+  struct {
+    // In:
+    std::deque<In> actual_in;
+    
+    // Out:
+    std::deque<Out> expected_out;
+
+    // Flag indicating that simulation has completed.
+    bool stopped = false;
+    
+  } sim_context_;
+};
+
+}
+
+#endif

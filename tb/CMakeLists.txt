@@ -65,9 +65,9 @@ add_custom_target(
   COMMENT "Verilating (C++): tb.sv"
   )
 
-add_executable(tb
+configure_file(tb.h.in tb.h)
+add_library(tb SHARED
   tb.cc
-  top.cc
   )
 target_link_libraries(tb
   ${CMAKE_CURRENT_BINARY_DIR}/vobj/Vtb__ALL.a
@@ -80,3 +80,11 @@ target_include_directories(tb PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 add_dependencies(tb build_verilog)
+
+add_executable(smoke
+  smoke.cc
+  )
+target_link_libraries(smoke tb)
+target_include_directories(smoke PRIVATE
+  ${CMAKE_CURRENT_BINARY_DIR}
+  )

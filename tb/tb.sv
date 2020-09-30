@@ -148,10 +148,10 @@ module tb (
     , .symbol_match_w         (symbol_match_w          )
     //
     , .clk_net                (clk_net                 )
-    , .rst_net                (clk_net                 )
+    , .rst_net                (rst_net                 )
     //
     , .clk_host               (clk_host                )
-    , .rst_host               (clk_host)
+    , .rst_host               (rst_host)
   );
 
   // ------------------------------------------------------------------------ //

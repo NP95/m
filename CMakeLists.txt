@@ -38,6 +38,8 @@ endif ()
 
 include(${CMAKE_SOURCE_DIR}/cmake/m.cmake)
 
+option(OPT_ENABLE_VCD "Enable waveform tracing (VCD)." ON)
+
 add_subdirectory(third_party)
 
 add_subdirectory(rtl)
