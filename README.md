@@ -67,7 +67,7 @@ The RTL solution consists as follows:
 
 * Packets arrive at m.sv where they are latched by an input register.
 * A simple FSM (fsm_PROC) is implemented to maintain the context of the word within the packet (as demarcated by the SOP and EOP fields).
-* Matching logic (match_type_PROC) is implemented to match the 'type' field within a packet. The match opration is appropriately qualified on the validity of the bytes within the word.
+* Matching logic (match_type_PROC) is implemented to match the 'type' field within a packet. The match operation is appropriately qualified on the validity of the bytes within the word.
 * Matching logic (match_symbol_PROC) is implemented to match the 'symbol' field within the packet. The problem solution was not explicit on the alignment requirements of the symbol field and it has been assumed that the match is performed on an 8B boundary (the match cannot take place over successive cycles).
 * A packet is considered 'matched' only if both the 'type' and at least one 'symbol' field has been detected within the packet body at the permissible locations.
 * The match operands are presented to the RTL on the SOP of the packet and may therefore change on a per-packet basis. This can be hardwired into the RTL fairly easily by using an elaboration-time constant at the cost of some (probably small) area and frequency advantage.
