@@ -35,30 +35,38 @@
 #include <limits>
 #include <string>
 #include <algorithm>
+#include <type_traits>
+
+#cmakedefine OPT_VCD_ENABLE
+
+#cmakedefine OPT_LOGGING_ENABLE
+
 
 // Forwards
 class Vtb;
+#ifdef OPT_VCD_ENABLE
 class VerilatedVcdC;
-
-#cmakedefine OPT_ENABLE_VCD
-
-#cmakedefine OPT_VERBOSE_LOGGING
+#endif
 
 namespace tb {
 
 struct Options {
+#ifdef OPT_VCD_ENABLE
   // Enable wave tracing
-  bool enable_vcd = false;
+  bool vcd_enable = false;
 
   // Emitted waveform
   std::string vcd_name = "sim.vcd";
-
+#endif
+#ifdef OPT_LOGGING_ENABLE
   // Verbose loggic
-  bool verbose = false;
+  bool logging_enable = false;
+#endif
 };
 
 
 struct In {
+  // Packet validity (false on bubbles)
   bool valid = false;
 
   // Start of packet
@@ -120,6 +128,18 @@ struct TestCase {
 
   std::string to_string() const;
 
+  // Unique test case identifier.
+  std::size_t id;
+
+  // Testcase expects a match
+  bool should_match = false;
+
+  // Expected match ID
+  vluint8_t predicted_match;
+
+  // Total number of bytes in packet.
+  std::size_t bytes;
+
   // Stimulus
   std::deque<In> in;
 
@@ -146,9 +166,19 @@ struct Random {
 
   // Generate a random integral type in range [lo, hi]
   template<typename T>
-  static T uniform(T hi = std::numeric_limits<T>::max(),
-                   T lo = std::numeric_limits<T>::min()) {
+  static std::enable_if_t<std::is_integral_v<T>, T>
+  uniform(T hi = std::numeric_limits<T>::max(),
+          T lo = std::numeric_limits<T>::min()) {
     std::uniform_int_distribution<T> d(lo, hi);
+    return d(mt_);
+  }
+
+  // Generate a random integral type in range [lo, hi]
+  template<typename T>
+  static std::enable_if_t<std::is_floating_point_v<T>, T>
+  uniform(T hi = std::numeric_limits<T>::max(),
+          T lo = std::numeric_limits<T>::min()) {
+    std::uniform_real_distribution<T> d(lo, hi);
     return d(mt_);
   }
 
@@ -202,9 +232,11 @@ class TB {
   
   // Verilated instance
   Vtb* tb_ = nullptr;
+#ifdef OPT_VCD_ENABLE
 
   // VCD (if applicable)
   VerilatedVcdC* vcd_ = nullptr;
+#endif
 
   // Tb options
   Options opts_;

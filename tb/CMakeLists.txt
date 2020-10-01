@@ -68,6 +68,7 @@ add_custom_target(
 configure_file(tb.h.in tb.h)
 add_library(tb SHARED
   tb.cc
+  utility.cc
   )
 target_link_libraries(tb
   ${CMAKE_CURRENT_BINARY_DIR}/vobj/Vtb__ALL.a

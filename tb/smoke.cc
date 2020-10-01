@@ -53,6 +53,11 @@ TEST(smoke, passthru) {
   // Testcase
   tb::TestCase tc;
 
+  // Set meta-data on directed test.
+  tc.id = 0;
+  tc.should_match = false;
+  tc.bytes = beats * 8;
+
   // Construct input stimulus:
   //
   for (std::size_t i = 0; i < beats; i++) {
@@ -60,7 +65,7 @@ TEST(smoke, passthru) {
     in.valid = true;
     in.sop = (i == 0);
     in.eop = (i == (beats - 1));
-    in.length = 7;
+    if (in.eop) { in.length = 7; }
     in.data = tb::Random::uniform<vluint64_t>();
     tc.in.push_back(in);
   }
@@ -72,7 +77,7 @@ TEST(smoke, passthru) {
     out.valid = true;
     out.sop = (i == 0);
     out.eop = (i == (beats - 1));
-    out.length = 7;
+    if (out.eop) { out.length = 7; }
     // In -> Out; data is not changed.
     out.data = tc.in[i].data;
     out.buffer = 0;
@@ -100,13 +105,19 @@ TEST(smoke, simple_match) {
   // Issue the same packet 'rounds' times; ensures that internal
   // retained state is appropriately flushed/cleared between packets.
   const std::size_t rounds = 1024;
-    const vluint8_t buffer = tb::Random::uniform<vluint8_t>(15);
+  const vluint8_t buffer = tb::Random::uniform<vluint8_t>(15);
 
   for (std::size_t round = 0; round < rounds; round++) {
     tb::TestCase tc;
 
     // Create packet with some arbitrary length.
     const std::size_t beats = tb::Random::uniform<std::size_t>(1500 / 8, 1);
+
+    // Set meta data;
+    tc.id = round;
+    tc.should_match = true;
+    tc.predicted_match = buffer;
+    tc.bytes = (beats * 8);
 
     // In:
     for (std::size_t i = 0; i < beats; i++) {

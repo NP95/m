@@ -26,20 +26,28 @@
 //========================================================================== //
 
 #include "tb.h"
+#include "utility.h"
 #include "vobj/Vtb.h"
-#ifdef OPT_ENABLE_VCD
+#ifdef OPT_VCD_ENABLE
 #  include "verilated_vcd_c.h"
 #endif
 #include "gtest/gtest.h"
 #include <sstream>
+#include <iostream>
 
 namespace tb {
 
 std::string TestCase::to_string() const {
-  std::stringstream ss;
-  // TODO
-  ss << "A packet";
-  return ss.str();
+  using std::to_string;
+  
+  utility::KVListRenderer r;
+  r.add_field("id", to_string(id));
+  r.add_field("bytes", to_string(bytes));
+  r.add_field("should_match", to_string(should_match));
+  if (should_match) {
+    r.add_field("predicted_match", utility::Hexer{}.to_hex(predicted_match));
+  }
+  return r.to_string();
 }
 
 void Random::init(unsigned seed) {
@@ -128,27 +136,35 @@ struct SymbolMatchDriver {
 };
 
 TB::TB(const Options& opts) : opts_(opts) {
-#ifdef OPT_ENABLE_VCD
-  if (opts.enable_vcd) {
+#ifdef OPT_VCD_ENABLE
+  if (opts.vcd_enable) {
     Verilated::traceEverOn(true);
   }
 #endif
   tb_ = new Vtb("tb");
-#ifdef OPT_ENABLE_VCD
-  if (opts.enable_vcd) {
+#ifdef OPT_LOGGING_ENABLE
+  std::cout << "[TB] Building testbench\n";
+#endif
+#ifdef OPT_VCD_ENABLE
+  if (opts.vcd_enable) {
     vcd_ = new VerilatedVcdC;
     tb_->trace(vcd_, 99);
     vcd_->open(opts.vcd_name.c_str());
+#ifdef OPT_LOGGING_ENABLE
+    std::cout << "[TB] Dumping to VCD: " << opts.vcd_name << "\n";
+#endif
   }
 #endif
 }
 
 TB::~TB() {
   delete tb_;
+#ifdef OPT_VCD_ENABLE
   if (vcd_) {
     vcd_->close();
     delete vcd_;
   }
+#endif
 }
 
 void TB::run(std::deque<TestCase>& tests) {
@@ -169,6 +185,10 @@ void TB::run(std::deque<TestCase>& tests) {
   host_context_.state = HostState::PreReset;
   host_context_.reset_ticks = 10;
 
+#ifdef OPT_LOGGING_ENABLE
+  std::cout << "[TB] Starting simulation\n";
+#endif
+  
   time_ = 0;
   while (!sim_context_.stopped) {
     time_++;
@@ -181,7 +201,7 @@ void TB::run(std::deque<TestCase>& tests) {
       }
       tb_->clk_net = !tb_->clk_net;
     }
-    if (time_ % 10 == 0) {
+    if (time_ % 5 == 0) {
       // Testbench samples RTL on negative edge of the host clock to
       // avoid synchronization issues with the RTL.
       if (tb_->clk_host) {
@@ -190,7 +210,7 @@ void TB::run(std::deque<TestCase>& tests) {
       tb_->clk_host = !tb_->clk_host;
     }
     tb_->eval();
-#ifdef OPT_ENABLE_VCD
+#ifdef OPT_VCD_ENABLE
     if (vcd_) {
       vcd_->dump(time_);
     }
@@ -208,6 +228,10 @@ void TB::run(std::deque<TestCase>& tests) {
 
   // All tests must have run:
   EXPECT_TRUE(tests.empty());
+
+#ifdef OPT_LOGGING_ENABLE
+  std::cout << "[TB] Simulation complete!\n";
+#endif
 }
 
 void TB::on_net_clk_negedge(std::deque<TestCase>& tests) {
@@ -240,6 +264,11 @@ void TB::on_net_clk_negedge(std::deque<TestCase>& tests) {
         }
 
         TestCase& test = tests.front();
+#ifdef OPT_LOGGING_ENABLE
+        if (opts_.logging_enable) {
+          std::cout << "[TB] Start test: " << test.to_string() << "\n";
+        }
+#endif
         for (const In& in : test.in) {
           ins.push_back(in);
         }
