@@ -45,7 +45,7 @@ target_include_directories(v PUBLIC
   ${Verilator_INCLUDE_DIR}
   )
 
-if (OPT_ENABLE_VCD)
+if (OPT_VCD_ENABLE)
   add_verilator_option("--trace")
 endif ()
 
@@ -82,12 +82,4 @@ target_include_directories(tb PRIVATE
   )
 add_dependencies(tb build_verilog)
 
-macro (create_test target file)
-  add_executable(${target} ${file})
-  target_link_libraries(${target} tb)
-  target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-  add_test(NAME ${target} COMMAND ${target})
-endmacro ()
-
-create_test(smoke smoke.cc)
-create_test(regress regress.cc)
+add_subdirectory(tests)

@@ -103,7 +103,6 @@ module tb (
     in_w.length                = in_length_w;
     in_w.data                  = in_data_w;
 
-
     symbol_match_w             = '0;
 
     //

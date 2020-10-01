@@ -41,7 +41,6 @@
 
 #cmakedefine OPT_LOGGING_ENABLE
 
-
 // Forwards
 class Vtb;
 #ifdef OPT_VCD_ENABLE
@@ -76,10 +75,10 @@ struct In {
   bool eop = false;
 
   // Word length (number of valid bytes)
-  vluint8_t length;
+  vluint8_t length = 0;
 
   // Word data.
-  vluint64_t data;
+  vluint64_t data = 0;
 };
 
 struct Out {
@@ -92,21 +91,21 @@ struct Out {
   bool eop = false;
 
   // Word length (number of valid bytes)
-  vluint8_t length;
+  vluint8_t length = 0;
 
   // Word data
-  vluint64_t data;
+  vluint64_t data = 0;
 
   // Match buffer valid on EOP
-  vluint8_t buffer;
+  vluint8_t buffer = 0;
 };
 
 
 struct PacketType {
 
-  vluint16_t off;
+  vluint16_t off = 0;
 
-  vluint32_t type;
+  vluint32_t type = 0;
 };
 
 struct SymbolMatch {
@@ -114,13 +113,13 @@ struct SymbolMatch {
   bool valid = false;
 
   // Offset
-  vluint8_t off;
+  vluint8_t off = 0;
 
   // 8B match word
-  vluint64_t match;
+  vluint64_t match = 0;
 
   // "Buffer" (Key) on a match operation.
-  vluint8_t buffer;
+  vluint8_t buffer = 0;
 };
 
 

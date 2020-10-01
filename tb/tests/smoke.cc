@@ -26,7 +26,7 @@
 //========================================================================== //
 
 #include "gtest/gtest.h"
-#include "tb.h"
+#include "../tb.h"
 #include <deque>
 
 
@@ -38,9 +38,12 @@ TEST(smoke, passthru) {
   tb::Random::init(1);
   
   tb::Options opts;
-#ifdef OPT_ENABLE_VCD
+#ifdef OPT_LOGGING_ENABLE
+  opts.logging_enable = true;
+#endif
+#ifdef OPT_VCD_ENABLE
   // Enable waveforms
-  opts.enable_vcd = true;
+  opts.vcd_enable = true;
   opts.vcd_name = "passthru.vcd";
 #endif
   
@@ -94,9 +97,12 @@ TEST(smoke, simple_match) {
   tb::Random::init(1);
   
   tb::Options opts;
-#ifdef OPT_ENABLE_VCD
+#ifdef OPT_LOGGING_ENABLE
+  opts.logging_enable = true;
+#endif
+#ifdef OPT_VCD_ENABLE
   // Enable waveforms
-  opts.enable_vcd = true;
+  opts.vcd_enable = true;
   opts.vcd_name = "simple_match.vcd";
 #endif
 

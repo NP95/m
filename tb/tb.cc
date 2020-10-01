@@ -51,6 +51,9 @@ std::string TestCase::to_string() const {
 }
 
 void Random::init(unsigned seed) {
+#ifdef OPT_LOGGING_ENABLE
+  std::cout << "[RND] seed set to " << seed << "\n";
+#endif
   mt_ = std::mt19937{seed};
 }
 
@@ -259,7 +262,7 @@ void TB::on_net_clk_negedge(std::deque<TestCase>& tests) {
           // Simulus exhausted; wind-down simulation awaiting state
           // which is currently inflight to be emitted.
           net_context_.state = NetState::PostActive;
-          net_context_.reset_ticks = 10;
+          net_context_.reset_ticks = 20;
           return;
         }
 

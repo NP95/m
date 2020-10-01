@@ -26,8 +26,8 @@
 //========================================================================== //
 
 #include "gtest/gtest.h"
-#include "tb.h"
-#include "utility.h"
+#include "../tb.h"
+#include "../utility.h"
 #include <deque>
 #include <string>
 #include <random>

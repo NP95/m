@@ -425,16 +425,6 @@ module m (
     
   end // block: match_symbol_PROC
 
-  m_pkg::data_t debug_data, debug_match;
-  m_pkg::buffer_t debug_buffer;
-  always_comb debug_data  = in_r.data;
-  always_comb debug_match  = symbol_match_r [2].match;
-  always_comb debug_buffer  = symbol_match_r [2].buffer;
-  logic [2:0] debug_packet_off;
-  always_comb debug_packet_off  = packet_type_off_r.off;
-  m_pkg::packet_word_off_t debug_packet_word_off_t;
-  always_comb debug_packet_word_off_t  = packet_type_off_r.word;
-
   // ------------------------------------------------------------------------ //
   //
   always_comb begin : match_PROC
