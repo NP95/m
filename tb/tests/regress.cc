@@ -362,7 +362,7 @@ TEST(regress, single_word_packet) {
 
 TEST(regress, full) {
   // Fully randomized, self-checking testbench.
-  for (std::size_t round = 0; round < 10; round++) {
+  for (std::size_t round = 0; round < 1000; round++) {
     const unsigned seed = tb::Random::uniform<unsigned>();
     const std::string testname = "regress" + std::to_string(round);
     RegressEnvironment r{testname, seed};

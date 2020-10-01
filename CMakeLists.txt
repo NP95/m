@@ -38,7 +38,7 @@ endif ()
 
 include(${CMAKE_SOURCE_DIR}/cmake/m.cmake)
 
-option(OPT_VCD_ENABLE "Enable waveform tracing (VCD)." ON)
+option(OPT_VCD_ENABLE "Enable waveform tracing (VCD)." OFF)
 option(OPT_LOGGING_ENABLE "Enable logging." OFF)
 
 add_subdirectory(third_party)
