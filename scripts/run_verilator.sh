@@ -28,6 +28,6 @@
 # Invoke Verilator
 #
 ${VERILATOR_EXE} ${verilator_opts} ${vinclude_path} -cc -Mdir vobj ${top}
-CXXFLAGS="-g -std=c++17" make -C${CMAKE_CURRENT_BINARY_DIR}/vobj -f "Vtb.mk"
+CXXFLAGS="-std=c++17" make -C${CMAKE_CURRENT_BINARY_DIR}/vobj -f "Vtb.mk"
 
 exit 0
