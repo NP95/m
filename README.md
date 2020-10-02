@@ -28,6 +28,15 @@ cmake --build .
 ctest .
 ```
 
+## Configuration
+
+The Verilator configuration script located in
+[FindVerilator.cmake](./cmake/FindVerilator.cmake) expects to discover
+a Verilator installation at certain pre-defined paths. If Verilator
+has not been installed at one of these known paths, it becomes
+necessary to update the 'HINTS' field to point to the appropriate
+location on your system.
+
 # Build with VCD
 
 ``` shell

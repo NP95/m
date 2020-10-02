@@ -238,27 +238,4 @@ module afifo #(
     , .q                 (wptr_gray_rsync_r  )
   );
 
-  // ------------------------------------------------------------------------ //
-  //
-  /*
-  dpsram #(.W(W), .N(N)) u_mem (
-    //
-      .clk0              (wclk               )
-    //
-    , .en0               (push               )
-    , .wen0              (1'b1               )
-    , .addr0             (wptr_r.a           )
-    , .din0              (push_data          )
-    , .dout0             ()
-    //
-    , .clk1              (rclk               )
-    //
-    , .en1               (pop                )
-    , .wen1              (1'b0               )
-    , .addr1             (rptr_r.a           )
-    , .din1              ('0                 )
-    , .dout1             (pop_data           )
-  );
-   */
-
 endmodule // fifo_async

@@ -161,11 +161,13 @@ module m (
   always_comb begin : fsm_PROC
 
     // Defaults
+    //
     fsm_state_en      = 'b0;
     fsm_state_w       = fsm_state_r;
 
     // Latch oprands on cycle preceeding SOP at the input latch such
     // that the the state is preloaded for the first word.
+    //
     fsm_oprand_en     = (in_vld_w & in_w.sop);
 
     fsm_word_off_inc  = 'b0;
@@ -179,10 +181,12 @@ module m (
     fsm_can_match     = 'b0;
 
     // Outputs to AFIFO
+    //
     net_out_vld       = 'b0;
 
     // For all fields aside from 'buffer' simply forward input to
     // output.
+    //
     net_out           = '0;
     net_out.sop       = in_r.sop;
     net_out.eop       = in_r.eop;
@@ -312,7 +316,7 @@ module m (
   //   [<=2:A] and [B:>=5]
   //
   // are impermissible and are therefore ingored.
-      
+  //
   always_comb begin : match_type_PROC
     
     // Mask denoting the valid bytes within the current word. Length
@@ -357,15 +361,14 @@ module m (
   end // block: match_type_PROC
 
   // ------------------------------------------------------------------------ //
-  //
   // Block to detect the presence of the associate 'match'
   // symbol.
   //
-  //  Caveat: The problem statement makes no explicit reference
-  // to the expected alignment of the 'symbol'. As the preceeding
-  // operation is constrained such that the type may not straddle
-  // multiple 8B words, it is too assumed that this remains the case
-  // here.
+  // Caveat: The problem statement makes no explicit reference to the
+  // expected alignment of the 'symbol'. As the preceeding operation
+  // is constrained such that the type may not straddle multiple 8B
+  // words, it is too assumed that this remains the case here.
+  //
   always_comb begin : match_symbol_PROC
 
     // A symbol is 8B therefore a match can occur only when the entire
