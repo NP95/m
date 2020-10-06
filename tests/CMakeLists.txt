@@ -25,27 +25,15 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-cmake_minimum_required(VERSION 3.5)
-project(m)
+add_executable(1 1.cc)
+target_link_libraries(1
+  tb
+  gtest_main
+  gtest
+  pthread
+)  
+target_include_directories(1 PRIVATE
+  ${CMAKE_BINARY_DIR}/tb
+  )
 
-set(CMAKE_CXX_STANDARD 17)
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-find_package(Verilator)
-if (Verilator_NOT_FOUND)
-  message(FATAL "Verilator installation has not been found.")
-endif ()
-
-include(${CMAKE_SOURCE_DIR}/cmake/m.cmake)
-
-option(OPT_VCD_ENABLE "Enable waveform tracing (VCD)." OFF)
-option(OPT_LOGGING_ENABLE "Enable logging." OFF)
-
-add_subdirectory(third_party)
-
-add_subdirectory(libv)
-add_subdirectory(rtl)
-
-enable_testing()
-add_subdirectory(tb)
-add_subdirectory(tests)
+add_test(NAME 1 COMMAND 1)
