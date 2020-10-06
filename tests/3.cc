@@ -156,28 +156,28 @@ string solution(int N, string &S, string &T) {
 }
 
 
-TEST(Q3, Basic) {
-  {
-    int N = 4;
-    std::string S = "1B 2C,2D 4D";
-    std::string T = "2B 2D 3D 4D 4A";
+TEST(Q3, Basic0) {
+  int N = 4;
+  std::string S = "1B 2C,2D 4D";
+  std::string T = "2B 2D 3D 4D 4A";
 
-    EXPECT_EQ(solution(N, S, T), "1,1");
-  }
-  {
-    int N = 3;
-    std::string S = "1A 1B,2C 2C";
-    std::string T = "1B";
+  EXPECT_EQ(solution(N, S, T), std::string("1,1"));
+}
 
-    EXPECT_EQ(solution(N, S, T), "0,1");
-  }
-  {
-    int N = 12;
-    std::string S = "1A 2A,12A 12A";
-    std::string T = "12A";
+TEST(Q3, Basic1) {
+  int N = 3;
+  std::string S = "1A 1B,2C 2C";
+  std::string T = "1B";
 
-    EXPECT_EQ(solution(N, S, T), "1,0");
-  }
+  EXPECT_EQ(solution(N, S, T), std::string("0,1"));
+}
+
+TEST(Q3, Basic2) {
+  int N = 12;
+  std::string S = "1A 2A,12A 12A";
+  std::string T = "12A";
+
+  EXPECT_EQ(solution(N, S, T), std::string("1,0"));
 }
 
 int main(int argc, char**argv) {
