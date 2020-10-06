@@ -25,15 +25,21 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-add_executable(1 1.cc)
-target_link_libraries(1
-  tb
-  gtest_main
-  gtest
-  pthread
-)  
-target_include_directories(1 PRIVATE
-  ${CMAKE_BINARY_DIR}/tb
-  )
+macro(create_test name)
+  add_executable(${name} ${name}.cc)
+  target_link_libraries(${name}
+    tb
+    gtest_main
+    gtest
+    pthread
+    )  
+  target_include_directories(${name} PRIVATE
+    ${CMAKE_BINARY_DIR}/tb
+    )
 
-add_test(NAME 1 COMMAND 1)
+  add_test(NAME ${name} COMMAND ${name})
+endmacro()
+
+create_test(1)
+create_test(2)
+create_test(3)

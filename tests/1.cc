@@ -187,7 +187,7 @@ TEST(Q1, Big) {
   try_vector({0, 0, 0});
   try_vector({2, -2, 3, 0, 4, -7});
   for (int i = 0; i < 1024; i++) {
-    const std::size_t n = tb::Random::uniform<std::size_t>(100);
+    const std::size_t n = tb::Random::uniform<std::size_t>(1000);
     std::vector<int> v;
     std::generate_n(
         std::back_inserter(v),
