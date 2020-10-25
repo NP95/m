@@ -25,4 +25,5 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
+set(BUILD_SHARED_LIBS ON)
 add_subdirectory(googletest)

@@ -40,7 +40,7 @@ set(Verilator_INCLUDE_DIR
   ${Verilator_INCLUDE_DIR}
   ${Verilator_INCLUDE_DIR}/vltstd
   )
-add_library(v STATIC ${Verilator_SRCS})
+add_library(v SHARED ${Verilator_SRCS})
 target_include_directories(v PUBLIC
   ${Verilator_INCLUDE_DIR}
   )
