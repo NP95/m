@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module gray_encode #(parameter int W = 32) (input [W-1:0] dec, output logic [W-1:0] gray);
   
   // ------------------------------------------------------------------------ //

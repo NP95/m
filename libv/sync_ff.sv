@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module sync_ff #(parameter int W = 1) (/*AUTOARG*/
                                        // Outputs
                                        q,

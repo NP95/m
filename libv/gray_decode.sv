@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module gray_decode #(parameter int W = 32) (input [W-1:0] gray, output logic [W-1:0] dec);
 
   typedef logic [W-1:0] w_t;

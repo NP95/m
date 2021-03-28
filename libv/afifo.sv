@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`default_nettype none
+`timescale 1ns/1ps
+
 module afifo #(
      parameter integer W = 32
    , parameter integer N = 16

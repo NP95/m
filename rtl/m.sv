@@ -25,6 +25,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //========================================================================== //
 
+`default_nettype none
+`timescale 1ns/1ps
+
 `include "m_pkg.vh"
 
 module m (
@@ -197,7 +200,7 @@ module m (
     //
     case (fsm_state_r)
       IDLE: begin
-        casez ({in_vld_r, in_r.sop, in_r.eop})
+        case ({in_vld_r, in_r.sop, in_r.eop}) inside
           3'b1_1_0: begin
             // Detected pakcet that is > 8B in length
 
@@ -227,14 +230,14 @@ module m (
             net_out_vld     = 'b1;
 
             // Remain in IDLE state
-          end
+          end // case: 3'b1_1_1
           default: begin
             // Otherwise, synchronize to the most recent SOP.
           end
         endcase
       end
       IN_PACKET: begin
-        casez ({in_vld_r, in_r.eop})
+        case ({in_vld_r, in_r.eop}) inside
           2'b1_0: begin
             // Word within the body of the current packet (not the
             // tail word).
@@ -291,7 +294,7 @@ module m (
     // Drive computed 'buffer' oprand based upon whether a match has
     // been encountered during the current packet.
     //
-    casez ({fsm_buffer_set, match_got_type, match_got_symbol})
+    case ({fsm_buffer_set, match_got_type, match_got_symbol}) inside
       3'b1_1_1:
         // Assign matched buffer on EOP if type and symbol have both
         // been detected in the payload
@@ -348,7 +351,7 @@ module m (
 
     // Compute final type match within current word.
     //
-    casez ({in_vld_r, match_type_in_word, match_type_off_in_range})
+    case ({in_vld_r, match_type_in_word, match_type_off_in_range}) inside
       3'b1_1_1:
         // Possibly found whenever current word is valid and we are in the
         // word where the type is expected to be found.
@@ -416,7 +419,7 @@ module m (
 
     // Compute final match decision.
     //
-    casez ({in_vld_r, match_symbol_can_match_word})
+    case ({in_vld_r, match_symbol_can_match_word}) inside
       2'b1_1:
         // Take the did_match value if the current word is
         // "matchable".
@@ -433,7 +436,7 @@ module m (
   always_comb begin : match_PROC
 
     //
-    casez ({fsm_oprand_en, fsm_can_match})
+    case ({fsm_oprand_en, fsm_can_match}) inside
       2'b1_?:
         // Clear retained state
         match_en  = 'b1;
@@ -449,7 +452,7 @@ module m (
     match_w  = match_r;
 
     // Updates
-    casez ({fsm_oprand_en, fsm_can_match})
+    case ({fsm_oprand_en, fsm_can_match}) inside
       2'b1_?:
         // New packet in next cycle therefore clear retained state.
         match_w   = 'b0;
