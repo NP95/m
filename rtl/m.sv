@@ -554,7 +554,7 @@ module m (
   // ------------------------------------------------------------------------ //
   //
   always_ff @(posedge clk_host)
-    if (rst_net)
+    if (rst_host)
       out_vld_r <= 'b0;
     else
       out_vld_r <= out_vld_w;
