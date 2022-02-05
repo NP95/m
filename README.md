@@ -2,7 +2,7 @@
 
 ![CMake Badge](https://github.com/stephenry/m/workflows/CI/badge.svg)
 
-"m" is a solution to a problem posed by a company for an FPGA based position. The problem was to scan through a variable length packet and to flag the presence of two randomly placed keys within its payload. The problem is closely related to packet parsing, but due to the limited scope of the problem, does not included specifics about the protocol being used.
+"m" is a solution to a problem posed by a company for an FPGA based position. The problem was to scan through a variable length packet and to flag the presence of two randomly placed keys within its payload. The problem is closely related to packet parsing, but due to the limited scope of the problem, does not include the specifics about the protocol being used.
 
 # Dependencies
 
