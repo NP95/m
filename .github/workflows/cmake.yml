@@ -1,36 +1,18 @@
 name: CI
-
 on: [push]
-
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
-    runs-on: ubuntu-20.04
-
+    runs-on: ubuntu-latest
+    container: 
+      image: ghcr.io/stephenry/vdev-v5.0
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
-      with: 
-        submodules: true
-      
-    - name: Install Dependencies
-      run: sudo apt install verilator
-
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{runner.workspace}}/build
-
+    - uses: actions/checkout@v3
     - name: Configure CMake
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-
+      run: cmake .
     - name: Build
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE
-
+      run: cmake --build .
     - name: Test
-      working-directory: ${{runner.workspace}}/build
-      shell: bash
-      run: ctest -C $BUILD_TYPE
+      run: ctest .
