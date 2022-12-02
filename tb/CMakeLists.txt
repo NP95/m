@@ -106,3 +106,5 @@ target_link_libraries(driver PRIVATE
    ${VERILATOR_A} vlib
    gtest gtest_main)
 add_dependencies(driver verilate)
+
+add_test(NAME driver COMMAND $<TARGET_FILE:driver>)
