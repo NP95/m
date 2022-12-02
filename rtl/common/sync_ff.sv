@@ -51,11 +51,15 @@ module sync_ff #(parameter int W = 1) (/*AUTOARG*/
 
   w_t d_1, d_2;
 
-  always_ff @(posedge clk)
-    begin
-      d_1 <= rst ? '0 : d;
-      d_2 <= rst ? '0 : d_1;
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      d_1 <= 1'b0;
+      d_2 <= 1'b0;
+    end else begin
+      d_1 <= d;
+      d_2 <= d_1;
     end
+  end
 
   always_comb q = d_2;
 

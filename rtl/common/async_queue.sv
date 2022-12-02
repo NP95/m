@@ -28,7 +28,7 @@
 `default_nettype none
 `timescale 1ns/1ps
 
-module afifo #(
+module async_queue #(
      parameter integer W = 32
    , parameter integer N = 16
 ) (
@@ -241,4 +241,4 @@ module afifo #(
     , .q                 (wptr_gray_rsync_r  )
   );
 
-endmodule // fifo_async
+endmodule // async_queue

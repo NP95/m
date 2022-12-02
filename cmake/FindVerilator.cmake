@@ -1,5 +1,5 @@
 ## ==================================================================== ##
-## Copyright (c) 2017, Stephen Henry
+## Copyright (c) 2022, Stephen Henry
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -28,43 +28,37 @@
 ## OF THE POSSIBILITY OF SUCH DAMAGE.
 ## ==================================================================== ##
 
-find_path(Verilator_INCLUDE_DIR verilated.h
-  PATH_SUFFIXES include
-  HINTS /Users/Shared/tools/verilator/latest/share/verilator/include
-  HINTS /usr/share/verilator/include
-  HINTS /opt/verilator/latest/share/verilator/include
-  DOC "Searching for Verilator installation."
-  )
-
-find_path(VerilatorDpi_INCLUDE_DIR svdpi.h
-  PATH_SUFFIXES include
-  HINTS /Users/Shared/tools/verilator/latest/share/verilator/include/vltstd
-  HINTS /usr/share/verilator/include/vltstd
-  HINTS /opt/verilator/latest/share/verilator/include/vltstd
-  DOC "Searching for Verilator installation."
-  )
-
-find_program(Verilator_EXE
-  verilator
-  HINTS /Users/Shared/tools/verilator/latest/share/verilator/bin
-  HINTS /usr/bin/verilator
-  HINTS /opt/verilator/latest/bin
-  DOC "Searching for Verilator executable."
-  )
-
-if (Verilator_EXE)
-  execute_process(COMMAND ${Verilator_EXE} "--version"
-    OUTPUT_VARIABLE v_version)
+if (EXISTS $ENV{VERILATOR_ROOT})
+  set(VERILATOR_ROOT $ENV{VERILATOR_ROOT})
+  set(Verilator_EXE ${VERILATOR_ROOT}/bin/verilator)
+  execute_process(COMMAND ${Verilator_EXE} --version
+    OUTPUT_VARIABLE Verilator_VER)
   string(REGEX REPLACE "Verilator ([0-9]).([0-9]+).*" "\\1"
-    VERILATOR_MAJOR_VERSION ${v_version})
+    VERILATOR_VERSION_MAJOR ${Verilator_VER})
   string(REGEX REPLACE "Verilator ([0-9]).([0-9]+).*" "\\2"
-    VERILATOR_MINOR_VERSION ${v_version})
+    VERILATOR_VERSION_MINOR ${Verilator_VER})
   set(VERILATOR_VERSION
-    ${VERILATOR_MAJOR_VERSION}.${VERILATOR_MINOR_VERSION})
+    ${VERILATOR_VERSION_MAJOR}.${VERILATOR_VERSION_MINOR})
   message(STATUS "Found Verilator version: ${VERILATOR_VERSION}")
-  message(STATUS "Verilator INCLUDE_DIR=${Verilator_INCLUDE_DIR}")
-  message(STATUS "Verilator DPI_INCLUDE_DIR=${VerilatorDpi_INCLUDE_DIR}")
-  message(STATUS "Verilator EXE=${Verilator_EXE}")
+
+  macro (verilator_build vlib)
+    add_library(${vlib} STATIC
+      "${VERILATOR_ROOT}/include/verilated.cpp"
+      "${VERILATOR_ROOT}/include/verilated_dpi.cpp"
+      "${VERILATOR_ROOT}/include/verilated_save.cpp"
+      "$<$<BOOL:${ENABLE_VCD}>:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp>"
+      )
+    target_include_directories(${vlib}
+      PRIVATE
+      "${VERILATOR_ROOT}/include"
+      "${VERILATOR_ROOT}/include/vltstd"
+      )
+  endmacro ()
 else()
-  message(FATAL "Verilator not found!")
+  # Configuration script expects and requires that the VERILATOR_ROOT
+  # variable be set in the current environment. 
+  message(WARNING [[
+    "VERILATOR_ROOT has not been defined in the environment. "
+    "Verilator not found! Simulation is not supported"
+    ]])
 endif ()

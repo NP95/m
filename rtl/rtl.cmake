@@ -1,5 +1,5 @@
 ##========================================================================== //
-## Copyright (c) 2016-2019, Stephen Henry
+## Copyright (c) 2022, Stephen Henry
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -25,5 +25,21 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-set(BUILD_SHARED_LIBS ON)
-add_subdirectory(googletest)
+# ---------------------------------------------------------------------------- #
+# Sources
+set(RTL_ROOT "${CMAKE_SOURCE_DIR}/rtl")
+
+set(RTL_SOURCES
+  "${RTL_ROOT}/common/async_queue.sv"
+  "${RTL_ROOT}/common/gray_decode.sv"
+  "${RTL_ROOT}/common/gray_encode.sv"
+  "${RTL_ROOT}/common/sync_ff.sv"
+  "${RTL_ROOT}/m.sv"
+  )
+
+set(RTL_INCLUDE_PATHS
+  "${RTL_ROOT}/common"
+  "${RTL_ROOT}"
+  )
+
+set(RTL_CFG_SOURCES "${RTL_ROOT}/cfg.vlt")

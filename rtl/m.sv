@@ -594,7 +594,7 @@ module m (
   // (probably neglible) power saving to be had from performing this
   // on a slower clock.
   //
-  afifo #(.W($bits(m_pkg::out_t)), .N(16)) u_afifo (
+  async_queue #(.W($bits(m_pkg::out_t)), .N(16)) u_async_queue (
     //
       .wclk                   (clk_net                 )
     , .wrst                   (rst_net                 )

@@ -25,61 +25,73 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 ##========================================================================== //
 
-include(CMakeParseArguments)
+# ---------------------------------------------------------------------------- #
+# Fetch dependencies
 
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.12.0
+)
 
-add_verilator_include_path(${CMAKE_CURRENT_SOURCE_DIR})
+# ---------------------------------------------------------------------------- #
+# Paramterizations
 
-set(Verilator_SRCS
-  ${Verilator_INCLUDE_DIR}/verilated.cpp
-  ${Verilator_INCLUDE_DIR}/verilated_dpi.cpp
-  ${Verilator_INCLUDE_DIR}/verilated_save.cpp
-  ${Verilator_INCLUDE_DIR}/verilated_vcd_c.cpp
+option(OPT_VCD_ENABLE "Enable waveform tracing (VCD)." OFF)
+option(OPT_LOGGING_ENABLE "Enable logging." OFF)
+
+# ---------------------------------------------------------------------------- #
+# Verilate
+
+include(rtl)
+
+# Build verilator support library
+verilator_build(vlib)
+
+set(VERILATOR_ARGS
+  "-cc"
+  "-Wall"
+  "--Mdir Vobj"
+  "--build"
+  "--top tb"
   )
-set(Verilator_INCLUDE_DIR
-  ${Verilator_INCLUDE_DIR}
-  ${Verilator_INCLUDE_DIR}/vltstd
-  )
-add_library(v SHARED ${Verilator_SRCS})
-target_include_directories(v PUBLIC
-  ${Verilator_INCLUDE_DIR}
-  )
-
 if (OPT_VCD_ENABLE)
-  add_verilator_option("--trace")
+  list(APPEND VERILATOR_ARGS --trace)
 endif ()
 
-get_property(vinclude_path GLOBAL PROPERTY vinclude_path)
-get_property(verilator_opts GLOBAL PROPERTY verilator_opts)
+set(TB_SOURCES
+  "${RTL_SOURCES}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
 
-add_custom_target(
-  build_verilog
-  COMMAND ${CMAKE_COMMAND} -E env
-  CXXFLAGS="-std=c++17"
-  VERILATOR_EXE=${Verilator_EXE}
-  CMAKE_CURRENT_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
-  verilator_opts="${verilator_opts}"
-  vinclude_path="${vinclude_path}"
-  top="${CMAKE_CURRENT_SOURCE_DIR}/tb.sv"
-  ${CMAKE_SOURCE_DIR}/scripts/run_verilator.sh
-  COMMENT "Verilating (C++): tb.sv"
-  )
+set(VERILATOR_COMMAND_LIST
+  "${VERILATOR_ARGS}"
+  "${VERILATOR_INCLUDES}"
+  "${TB_SOURCES}")
+
+string(REGEX REPLACE ";" "\n" FILELIST "${VERILATOR_COMMAND_LIST}")
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/vc.f "${FILELIST}")
+
+add_custom_target(verilate
+  COMMAND ${Verilator_EXE} -f ${CMAKE_CURRENT_BINARY_DIR}/vc.f
+  COMMENT "Verilating...")
+
+set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a")
+
+# ---------------------------------------------------------------------------- #
+# Driver executable:
 
 configure_file(tb.h.in tb.h)
-add_library(tb SHARED
-  tb.cc
-  utility.cc
-  )
-target_link_libraries(tb
-  ${CMAKE_CURRENT_BINARY_DIR}/vobj/Vtb__ALL.a
-  v
-  gtest_main
-  gtest
-  pthread
-  )
-target_include_directories(tb PRIVATE
-  ${CMAKE_CURRENT_BINARY_DIR}
-  )
-add_dependencies(tb build_verilog)
 
-add_subdirectory(tests)
+set(DRIVER_CPP
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc"
+  )
+
+add_executable(driver ${DRIVER_CPP})
+target_include_directories(driver PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${VERILATOR_ROOT}/include")
+target_link_libraries(driver vlib ${VERILATOR_A})
+add_dependencies(driver verilate)
