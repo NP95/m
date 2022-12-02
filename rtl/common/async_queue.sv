@@ -108,9 +108,6 @@ module async_queue #(
   addr_t                                wptr_gray_rsync_r;
   addr_t                                rptr_gray_wsync_r;
   //
-  logic                                 pop_data_vld_w;
-
-  //
   logic [N - 1:0][W - 1:0]              mem_r;
 
   // ======================================================================== //

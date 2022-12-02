@@ -26,8 +26,8 @@
 //========================================================================== //
 
 #include "gtest/gtest.h"
-#include "../tb.h"
-#include "../utility.h"
+#include "tb.h"
+#include "utility.h"
 #include <deque>
 #include <string>
 #include <random>
@@ -377,9 +377,4 @@ TEST(regress, full) {
 #endif
     r.run();
   }
-}
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }

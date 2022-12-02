@@ -46,10 +46,10 @@ if (EXISTS $ENV{VERILATOR_ROOT})
       "${VERILATOR_ROOT}/include/verilated.cpp"
       "${VERILATOR_ROOT}/include/verilated_dpi.cpp"
       "${VERILATOR_ROOT}/include/verilated_save.cpp"
-      "$<$<BOOL:${ENABLE_VCD}>:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp>"
+      "$<$<BOOL:${OPT_VCD_ENABLE}>:${VERILATOR_ROOT}/include/verilated_vcd_c.cpp>"
       )
     target_include_directories(${vlib}
-      PRIVATE
+      PUBLIC
       "${VERILATOR_ROOT}/include"
       "${VERILATOR_ROOT}/include/vltstd"
       )

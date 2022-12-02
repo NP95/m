@@ -609,7 +609,9 @@ module m (
     , .pop_data               (afifo_pop_data          )
     //
     , .empty_w                (afifo_empty_w           )
+    // verilator lint_off PINCONNECTEMPTY
     , .full_w                 ()
+    // verilator lint_on PINCONNECTEMPTY
   );
 
 endmodule // m

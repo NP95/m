@@ -27,7 +27,7 @@
 
 #include "tb.h"
 #include "utility.h"
-#include "vobj/Vtb.h"
+#include "Vobj/Vtb.h"
 #ifdef OPT_VCD_ENABLE
 #  include "verilated_vcd_c.h"
 #endif
@@ -334,3 +334,8 @@ void TB::on_host_clk_negedge() {
 }
 
 } // namespace tb
+
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

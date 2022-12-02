@@ -53,8 +53,8 @@ module sync_ff #(parameter int W = 1) (/*AUTOARG*/
 
   always_ff @(posedge clk) begin
     if (rst) begin
-      d_1 <= 1'b0;
-      d_2 <= 1'b0;
+      d_1 <= 'b0;
+      d_2 <= 'b0;
     end else begin
       d_1 <= d;
       d_2 <= d_1;

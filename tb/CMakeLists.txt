@@ -28,11 +28,15 @@
 # ---------------------------------------------------------------------------- #
 # Fetch dependencies
 
+include(FetchContent)
+
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.12.0
+  GIT_TAG        release-1.12.0
 )
+
+FetchContent_MakeAvailable(googletest)
 
 # ---------------------------------------------------------------------------- #
 # Paramterizations
@@ -44,9 +48,6 @@ option(OPT_LOGGING_ENABLE "Enable logging." OFF)
 # Verilate
 
 include(rtl)
-
-# Build verilator support library
-verilator_build(vlib)
 
 set(VERILATOR_ARGS
   "-cc"
@@ -62,6 +63,11 @@ endif ()
 set(TB_SOURCES
   "${RTL_SOURCES}"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.sv")
+
+set(VERILATOR_INCLUDES "-I${CMAKE_CURRENT_BINARY_DIR}")
+foreach (inc_fn ${RTL_INCLUDE_PATHS})
+  list(APPEND VERILATOR_INCLUDES "-I${inc_fn}")
+endforeach ()
 
 set(VERILATOR_COMMAND_LIST
   "${VERILATOR_ARGS}"
@@ -80,18 +86,23 @@ set(VERILATOR_A "${CMAKE_CURRENT_BINARY_DIR}/Vobj/Vtb__ALL.a")
 # ---------------------------------------------------------------------------- #
 # Driver executable:
 
+# Build verilator support library
+verilator_build(vlib)
+
 configure_file(tb.h.in tb.h)
 
 set(DRIVER_CPP
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/regress.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/utility.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/tb.cc"
   )
 
 add_executable(driver ${DRIVER_CPP})
 target_include_directories(driver PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}"
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${VERILATOR_ROOT}/include")
-target_link_libraries(driver vlib ${VERILATOR_A})
+  "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(driver PRIVATE
+   ${VERILATOR_A} vlib
+   gtest gtest_main)
 add_dependencies(driver verilate)

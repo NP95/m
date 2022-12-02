@@ -26,7 +26,7 @@
 //========================================================================== //
 
 #include "gtest/gtest.h"
-#include "../tb.h"
+#include "tb.h"
 #include <deque>
 
 
@@ -172,9 +172,4 @@ TEST(smoke, simple_match) {
   
   tb::TB tb(opts);
   tb.run(tests);
-}
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }
