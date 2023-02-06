@@ -35,8 +35,8 @@ package m_pkg;
 
   // From a len, derive the corresponding unary (thermometer) mask.
   function logic [7:0] len_to_unary_mask(len_t len); begin
-    // TBD: verify that len == 0, results in 'b1.
-    return ('b1 << int'(len) + 'b1)  - 'b1;
+    for (int i = 0; i < 8; i++)
+      len_to_unary_mask [i] = (len >= len_t'(i));
   end endfunction
 
   // Data type

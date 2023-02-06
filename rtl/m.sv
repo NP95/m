@@ -326,7 +326,7 @@ module m (
     // is only considered on EOP.
     //
     match_valid_mask    =
-      in_r.eop ? m_pkg::len_to_unary_mask(in_r.length) : '1;
+      m_pkg::len_to_unary_mask(in_r.length) | {8{~in_r.eop}};
 
     // Flag denoting that the current type is expected somewhere
     // within the current word.
